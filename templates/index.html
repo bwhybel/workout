@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
 {% block content %}
+{% block title %}
+<h1>writing workouts</h1>
+{% endblock %}
 {% for team_id in team_ids_to_groups.keys() %}
 <p>{{ team_ids_to_names[team_id].lower() }} [<a href={{ url_for('write_team_id', id=team_id) }}>edit</a>]</p>
 <ul>

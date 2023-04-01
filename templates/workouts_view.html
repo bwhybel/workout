@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+      <p>{{ team_name.lower() }} {{ group_name.lower() }} workouts <a href={{ url_for('write_workout', group_id=group_id) }}>new</a></p>
+      <ul>
+      {% for workout in workouts %}
+      <li><a href={{ url_for('write_workout_id', id=workout['id']) }}>{{ workout['date'] }} {{ workout['title'].lower() }}</a></li>
+      {% endfor %}
+      </ul>
+{% endblock %}

@@ -65,7 +65,6 @@
   }
 
   const timeToInt = (data) => {
-      console.log(data)
       if (time0.test(data)) {
           let array = time0.exec(data);
           return parseInt(array[1], 10) * 60 + parseInt(array[2], 10);
@@ -214,13 +213,28 @@
       }
       return info;
   }
+  const getDifference = (a, b) => {
+    var i = 0;
+    var j = 0;
+    var result = "";
+
+    while (j < b.length) {
+      if (a[i] != b[j] || i == a.length)
+        result += b[j];
+      else
+        i++;
+      j++;
+    }
+    return result;
+  }
 
   const process = (e) => {
       let textArea = document.getElementById('workout').value;
       let originalTextArea = `{{ workout_text }}`.replace(/\s+/g, '')
       let newTextArea = textArea.replace(/\s+/g, '')
-      console.log(newTextArea)
-      console.log(originalTextArea)
+      // console.log(newTextArea)
+      // console.log(originalTextArea)
+      // console.log(getDifference(newTextArea, originalTextArea));
       if (originalTextArea != newTextArea) {
 	  document.getElementById('edited').innerHTML = 'edited!'
       } else {

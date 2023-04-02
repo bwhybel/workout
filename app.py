@@ -320,7 +320,7 @@ def download_seconds():
 
   group = request.form.get('group')
   date = request.form.get('date')
-  file_name = "{}-{}".format(date, group.lower().replace(' ', '-'))
+  file_name = "{}-{}.seconds".format(date, group.lower().replace(' ', '-'))
   return send_file(file_path, attachment_filename=file_name)
 
 

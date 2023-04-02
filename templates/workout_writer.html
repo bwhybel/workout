@@ -10,7 +10,7 @@
 </p>
 <form action={{ url_for('workout', group_id=group['id']) }} method="post">
   <label for='id' style='display: none;'>id</label>
-  <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'><br />
+  <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'>
   <label for='total_time'>time</label>
   <input type='text' id='total_time' name='total_time'>
   <label for='total_time_with_rest'>time with rest</label>
@@ -27,10 +27,18 @@
   <input type="submit" value="save">
 </form>
 {% if id %}
-<a href={{ url_for('delete_workout', workout_id=id) }}>delete</a>
+<form action={{ url_for('delete_workout', workout_id=id) }}>
+  <input type='submit' value='delete'>
+</form>
 {% endif %}
 <button id="clickbind">pdf</button>
-<button id="clickbind2">seconds</button>
+<form onsubmit='make_seconds()' action={{ url_for('download_seconds') }} method="post">
+  <input style='display: none;' type='text' name='id' id='id' value='{{ id }}'>
+  <input style='display: none;' type='text' name='date' id='date' value='{{ date }}'>
+  <input style='display: none;' type='text' name='group' id='group' value="{{ group['name'] }}">
+  <input style='display: none;' type='text' name='seconds_json' id='seconds_json'>
+  <input type="submit" value="seconds">
+</form>
 <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
 <script>
   const setLine = new RegExp('^(\\s|{)*(\\d+)\\s*(x|\u{00D7})\\s*(\\d+)\\s*@\\s*(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d|\\d\\d|\\d)\\s+(.*)$');
@@ -282,7 +290,7 @@
       pdf.save(globalInfo.date + "_" + globalInfo.group + ".pdf");
   };
   // use our custom object to create a seconds file to use in the app
-  const makeSeconds = () => {
+  const make_seconds = () => {
       const globalRestBetween = document.getElementById("rest_interval").value;
       let seconds = {};
       seconds._type = "pack";
@@ -383,24 +391,11 @@
 
       seconds.items.push(folder);
 
-      let element = document.createElement('a');
-      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(seconds)));
-      element.setAttribute('download', globalInfo.date + "_" + globalInfo.group + ".seconds");
-
-      element.style.display = 'none';
-      document.body.appendChild(element);
-
-      element.click();
-
-      document.body.removeChild(element);
+      document.getElementById('seconds_json').value = JSON.stringify(seconds)
   }
 
   let pdfButton = document.getElementById("clickbind");
   pdfButton.addEventListener("click", makePdf);
-
-  let secondsButton = document.getElementById("clickbind2");
-  secondsButton.addEventListener("click", makeSeconds);
-
 </script>
 {% endif %}
 {% endblock %}

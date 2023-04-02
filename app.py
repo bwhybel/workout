@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, g
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, g, current_app, send_file
 from azure.cosmos import CosmosClient
 import datetime
 import time
@@ -309,6 +309,19 @@ def write_workout_id(id):
     rest_interval=real_workout['rest_interval'],
     workout_text=real_workout['workout_text']
   )
+
+@app.route('/download', methods=['POST'])
+def download_seconds():
+  seconds_json = request.form.get('seconds_json')
+  id = request.form.get('id')
+  file_path = os.path.join(current_app.root_path, 'temp.seconds')
+  with open(file_path, 'w') as f:
+    f.write(seconds_json)
+
+  group = request.form.get('group')
+  date = request.form.get('date')
+  file_name = "{}-{}".format(date, group.lower().replace(' ', '-'))
+  return send_file(file_path, attachment_filename=file_name)
 
 
 @app.route('/favicon.ico')

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>{% block title %}writing a new workout{% endblock %}</h1>
+<h1>{% block title %}writing a new workout{% endblock %} <span id="edited" style="color: red"></span></h1>
 {% if not group %}
 <p> uhh this isn't an actual group you can write workouts for </p>
 {% else %}
@@ -217,6 +217,16 @@
 
   const process = (e) => {
       let textArea = document.getElementById('workout').value;
+      let originalTextArea = `{{ workout_text }}`.replace(/\s+/g, '')
+      let newTextArea = textArea.replace(/\s+/g, '')
+      console.log(newTextArea)
+      console.log(originalTextArea)
+      if (originalTextArea != newTextArea) {
+	  document.getElementById('edited').innerHTML = 'edited!'
+      } else {
+	  document.getElementById('edited').innerHTML = ''
+      }
+
       let array = textArea.split('\n');
       let info = getInfo(array);
       document.getElementById('total_yards').value = info.yards;

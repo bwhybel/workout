@@ -6,24 +6,24 @@
 {% else %}
 <p><a href={{ url_for('workouts', group_id=group['id']) }}>{{ team['name'].lower() }} {{ group['name'].lower() }} workouts</a></p>
 <p>
-  new {{ team['name'].lower() }} {{ group['name'].lower() }} workout<br />
+  new {{ team['name'].lower() }} {{ group['name'].lower() }} workout
 </p>
 <form action={{ url_for('workout', group_id=group['id']) }} method="post">
   <label for='id' style='display: none;'>id</label>
   <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'><br />
   <label for='total_time'>time</label>
-  <input type='text' id='total_time' name='total_time'><br />
+  <input type='text' id='total_time' name='total_time'>
   <label for='total_time_with_rest'>time with rest</label>
-  <input type='text' id='total_time_with_rest' name='total_time_with_rest'><br />
+  <input type='text' id='total_time_with_rest' name='total_time_with_rest'>
   <label for='total_yards'>yards</label>
   <input type='text' id='total_yards' name='total_yards'><br />
   <label for='date'>date</label>
-  <input type='text' pattern="\d\d\d\d-\d\d-\d\d" id='date' name='date' value='{{ date or today }}'><br />
+  <input type='text' pattern="\d\d\d\d-\d\d-\d\d" id='date' name='date' value='{{ date or today }}'>
   <label for='title'>title</label>
-  <input type='text' id='title' name='title' value='{{ title }}'><br />
+  <input type='text' id='title' name='title' value='{{ title }}'>
   <label for='rest_interval'>rest (minutes)</label>
   <input type='number' id='rest_interval' name='rest_interval' value='{{ rest_interval or 2 }}'><br />
-  <textarea id='workout' name='workout_text' cols='100' rows='50' onkeyup='process(event, this)'>{{ workout_text }}</textarea><br />
+  <textarea id='workout' name='workout_text' style='width: 100%;height: 50vh' rows='50' onkeyup='process(event, this)'>{{ workout_text }}</textarea><br />
   <input type="submit" value="save">
 </form>
 {% if id %}

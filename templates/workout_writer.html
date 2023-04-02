@@ -8,7 +8,7 @@
 <p>
   new {{ team['name'].lower() }} {{ group['name'].lower() }} workout
 </p>
-<form action={{ url_for('workout', group_id=group['id']) }} method="post">
+<form action={{ url_for('workout', group_id=group['id']) }} method="post" style="display: inline;">
   <label for='id' style='display: none;'>id</label>
   <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'>
   <label for='total_time'>time</label>
@@ -24,20 +24,20 @@
   <label for='rest_interval'>rest (minutes)</label>
   <input type='number' id='rest_interval' name='rest_interval' value='{{ rest_interval or 2 }}'><br />
   <textarea id='workout' name='workout_text' style='width: 100%;height: 50vh' rows='50' onkeyup='process(event, this)'>{{ workout_text }}</textarea><br />
-  <input type="submit" value="save">
+  <input type="submit" style="width: 100px;height: 50px" value="save">
 </form>
 {% if id %}
-<form action={{ url_for('delete_workout', workout_id=id) }}>
-  <input type='submit' value='delete'>
+<form style="display: inline;" action={{ url_for('delete_workout', workout_id=id) }}>
+  <input style="width: 100px;height: 50px" type='submit' value='delete'>
 </form>
 {% endif %}
-<button id="clickbind">pdf</button>
-<form onsubmit='make_seconds()' action={{ url_for('download_seconds') }} method="post">
+<button style="width: 100px;height: 50px" id="clickbind">pdf</button>
+<form onsubmit='make_seconds()' action={{ url_for('download_seconds') }} method="post" style="display: inline;">
   <input style='display: none;' type='text' name='id' id='id' value='{{ id }}'>
   <input style='display: none;' type='text' name='date' id='date' value='{{ date }}'>
   <input style='display: none;' type='text' name='group' id='group' value="{{ group['name'] }}">
   <input style='display: none;' type='text' name='seconds_json' id='seconds_json'>
-  <input type="submit" value="seconds">
+  <input style="width: 100px;height: 50px" type="submit" value="seconds">
 </form>
 <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
 <script>

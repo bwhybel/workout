@@ -41,6 +41,13 @@
   <input style='display: none;' type='text' name='seconds_json' id='seconds_json'>
   <input style="width: 100px;height: 50px" type="submit" value="seconds">
 </form>
+<form onsubmit='make_wk3()' action={{ url_for('download_wk3') }} method="post" style="display: inline;">
+    <input style='display: none;' type='text' name='id' id='id' value='{{ id }}'>
+    <input style='display: none;' type='text' name='date' id='date' value='{{ date }}'>
+    <input style='display: none;' type='text' name='group' id='group' value="{{ group['name'] }}">
+    <textarea style='display: none;' type='text' name='wk3_text' id='wk3_text'></textarea>
+    <input style="width: 100px;height: 50px" type="submit" value="wk3">
+  </form>
 <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
 <script>
   const setLine = new RegExp('^(\\s|{)*(\\d+)\\s*(x|\u{00D7})\\s*(\\d+)\\s*@\\s*(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d|\\d\\d|\\d)\\s+(.*)$');
@@ -434,6 +441,35 @@
       seconds.items.push(folder);
 
       document.getElementById('seconds_json').value = JSON.stringify(seconds)
+  }
+
+    // use our custom object to create a wk3 file to use in the hytek system!
+    const make_wk3 = () => {
+      const restBetween = timeToInt(document.getElementById("rest_interval").value);
+      let date_list = globalInfo.date.replaceAll("-", ",")
+      let wk3_text = "";
+      wk3_text += `<H>,Hy-Tek's Workout Export,\"Swift Aquatics - IL\",8.0Fe,2022,9,13,${date_list}\n`;
+      wk3_text += "<G>,SR,\"Senior\"\n";
+      wk3_text += "<S>,IM,\"IM'ers\"\n";
+      wk3_text += `<W>,1,${date_list},960,0,SR,IM,Y,1400,0\n`;
+      lineCount = 1
+      globalInfo.sets.forEach(setItem => {
+        if(setItem.des) {
+            let restLine = `<>,${lineCount},S,0,0,0,1,0,${restBetween},\"rest\",,,,,,,\n`;
+            wk3_text += restLine;
+            lineCount++;
+        }
+        for (let i = 0; i < setItem.rounds; i++) {
+	        setItem.lines.forEach(line => {
+                let setLine = `<>,${lineCount},0,0,0,${line.rep},${line.dis},${timeToInt(line.int)},\"${line.des}\",,,,,,,\n`
+                wk3_text += setLine
+                lineCount++;
+            });
+        }
+      });
+
+      wk3_text += `<N>\n<Z>`;
+      document.getElementById('wk3_text').value = wk3_text
   }
 
   let pdfButton = document.getElementById("clickbind");

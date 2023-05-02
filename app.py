@@ -311,7 +311,7 @@ def write_workout_id(id):
     workout_text=real_workout['workout_text']
   )
 
-@app.route('/download', methods=['POST'])
+@app.route('/seconds/download', methods=['POST'])
 def download_seconds():
   seconds_json = request.form.get('seconds_json')
   id = request.form.get('id')
@@ -322,6 +322,20 @@ def download_seconds():
   group = request.form.get('group')
   date = request.form.get('date')
   file_name = "{}-{}.seconds".format(date, group.lower().replace(' ', '-'))
+  return send_file(file_path, attachment_filename=file_name)
+
+
+@app.route('/wk3/download', methods=['POST'])
+def download_wk3():
+  wk3_text = request.form.get('wk3_text')
+  id = request.form.get('id')
+  file_path = os.path.join(current_app.root_path, 'temp.wk3')
+  with open(file_path, 'w') as f:
+    f.write(wk3_text)
+
+  group = request.form.get('group')
+  date = request.form.get('date')
+  file_name = "{}-{}.wk3".format(date, group.lower().replace(' ', '-'))
   return send_file(file_path, attachment_filename=file_name)
 
 

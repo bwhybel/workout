@@ -54,6 +54,7 @@
   const noRepLine = new RegExp('^(\\d+)\\s*@\\s*(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d|\\d\\d|\\d)\\s+(.*)$');
   const roundLine = new RegExp('(\\d+)\\s*(x|\u{00D7})\\s*{$');
   const setDes = new RegExp('//\\s*(.*)');
+  const subGroup = /#\w+/g;
   const noteLine = new RegExp('--\\s*(.*)');
   const endRoundLine = new RegExp('^}$');
   const restLine = new RegExp('^(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d)\\s*(.*)$')
@@ -129,10 +130,12 @@
           "pace_seconds": 0
       };
       currentRounds = 1;
+      let currentSubs = []
       let currentSet = {
           des: "",
           lines: [],
-          rounds: 1
+          rounds: 1,
+          subs: currentSubs
       };
       let tooLong = false;
 
@@ -193,6 +196,14 @@
           } else if (setDes.test(line)) {
               let array = setDes.exec(line);
               info.rest += timeToInt(globalRestBetween);
+              currentSubs = [];
+              if (line.match(subGroup)) {
+                sub_array = line.match(subGroup);
+                sub_array.forEach(sub => {
+                    currentSubs.push(sub);
+                });
+              }
+              currentSet.subs = currentSubs;
               currentSet.des = array[1];
           } else if (noteLine.test(line)) {
               let array = noteLine.exec(line);
@@ -205,7 +216,8 @@
                   currentSet = {
                       des: "",
                       lines: [],
-                      rounds: 1
+                      rounds: 1,
+                      subs: currentSubs
                   };
               }
           } else if (line === "") {
@@ -216,7 +228,8 @@
                   currentSet = {
                       des: "",
                       lines: [],
-                      rounds: 1
+                      rounds: 1,
+                      subs: currentSubs
                   };
               }
           }
@@ -256,9 +269,6 @@
       let textArea = document.getElementById('workout').value;
       let originalTextArea = `{{ workout_text }}`.replace(/\s+/g, '')
       let newTextArea = textArea.replace(/\s+/g, '')
-      // console.log(newTextArea)
-      // console.log(originalTextArea)
-      // console.log(getDifference(newTextArea, originalTextArea));
       if (originalTextArea != newTextArea) {
 	  document.getElementById('edited').innerHTML = 'edited!'
       } else {

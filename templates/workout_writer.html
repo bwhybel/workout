@@ -12,17 +12,19 @@
   <label for='id' style='display: none;'>id</label>
   <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'>
   <label for='total_time'>time</label>
-  <input type='text' id='total_time' name='total_time'>
-  <label for='total_time_with_rest'>time with rest</label>
-  <input type='text' id='total_time_with_rest' name='total_time_with_rest'>
+  <input type='text' id='total_time' name='total_time' maxlength="8" size="8">
+  <label for='total_time_with_rest'>time w/ rest</label>
+  <input type='text' id='total_time_with_rest' name='total_time_with_rest' maxlength="8" size="8">
   <label for='total_yards'>yards</label>
-  <input type='text' id='total_yards' name='total_yards'><br />
+  <input type='text' id='total_yards' name='total_yards' maxlength="5" size="5">
+  <label for='last_pace'>pace</label>
+  <input type='text' id='last_pace' name='last_pace' maxlength="7" size="7"><br />
   <label for='date'>date</label>
-  <input type='text' pattern="\d\d\d\d-\d\d-\d\d" id='date' name='date' value='{{ date or today }}'>
+  <input type='text' pattern="\d\d\d\d-\d\d-\d\d" id='date' name='date' value='{{ date or today }}'  maxlength="10" size="10">
   <label for='title'>title</label>
   <input type='text' id='title' name='title' value='{{ title }}'>
   <label for='rest_interval'>rest (minutes)</label>
-  <input type='number' id='rest_interval' name='rest_interval' value='{{ rest_interval or 2 }}'><br />
+  <input type='text' pattern="\d*" maxlength="4" size="4" id='rest_interval' name='rest_interval' value='{{ rest_interval or 2 }}'><br />
   <textarea id='workout' name='workout_text' style='width: 100%;height: 50vh' rows='50' onkeyup='process(event, this)'>{{ workout_text }}</textarea><br />
   <input type="submit" style="width: 100px;height: 50px" value="save">
 </form>
@@ -62,6 +64,15 @@
       data -= minutes * 60;
       let seconds = data;
       return hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + ":" + seconds.toString().padStart(2, '0');
+  }
+
+  const timeToShortString = (data) => {
+    let hours = Math.floor(data / 3600);
+    data -= hours * 3600;
+    let minutes = Math.floor(data / 60);
+    data -= minutes * 60;
+    let seconds = Math.round(data * 10.0) / 10.0;
+    return minutes.toString().padStart(2, '0') + ":" + seconds.toString().padStart(2, '0');
   }
 
   const timeToInt = (data) => {
@@ -107,7 +118,8 @@
           "yards": 0,
           "time": 0,
           "rest": 0,
-          "sets": []
+          "sets": [],
+          "pace_seconds": 0
       };
       currentRounds = 1;
       let currentSet = {
@@ -116,6 +128,8 @@
           rounds: 1
       };
       let tooLong = false;
+
+      pace_seconds = 0
       data.forEach(line => {
           if (setLine.test(line)) {
               let array = setLine.exec(line);
@@ -123,6 +137,7 @@
               let dis = parseInt(array[4], 10);
               let int = array[5];
               let des = array[6];
+              pace_seconds = (timeToInt(int) * 1.0) / dis * 100.0;
               info.yards += currentRounds * rep * dis;
               info.time += currentRounds * rep * timeToInt(int);
               let currentLine = {
@@ -139,6 +154,7 @@
               let dis = parseInt(array[1], 10);
               let int = array[2];
               let des = array[3];
+              pace_seconds = (timeToInt(int) * 1.0) / dis * 100.0;
               info.yards += currentRounds * dis;
               info.time += currentRounds * timeToInt(int);
               let currentLine = {
@@ -205,6 +221,7 @@
           currentSet.rounds = currentRounds;
           info.sets.push(currentSet);
       }
+      info.pace_seconds = pace_seconds
       globalInfo = info;
       if (tooLong) {
           document.getElementById("workout").style.color = "red";
@@ -246,6 +263,7 @@
       document.getElementById('total_yards').value = info.yards;
       document.getElementById('total_time').value = timeToString(info.time);
       document.getElementById('total_time_with_rest').value = timeToString(info.time + info.rest);
+      document.getElementById('last_pace').value = timeToShortString(info.pace_seconds)
   }
 
   process()

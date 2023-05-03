@@ -322,7 +322,7 @@ def download_seconds():
   group = request.form.get('group')
   date = request.form.get('date')
   file_name = "{}-{}.seconds".format(date, group.lower().replace(' ', '-'))
-  return send_file(file_path, attachment_filename=file_name)
+  return send_file(file_path, download_name=file_name)
 
 
 @app.route('/wk3/download', methods=['POST'])
@@ -336,7 +336,7 @@ def download_wk3():
   group = request.form.get('group')
   date = request.form.get('date')
   file_name = "{}-{}.wk3".format(date, group.lower().replace(' ', '-'))
-  return send_file(file_path, attachment_filename=file_name)
+  return send_file(file_path, download_name=file_name)
 
 
 @app.route('/favicon.ico')

@@ -1,4 +1,26 @@
 {% extends 'base.html' %}
+{% block style %}
+/* Styles for the table */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Styles for alternating row colors */
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+{% endblock %}
 {% block content %}
 <h1>{% block title %}writing a new workout{% endblock %} <span id="edited" style="color: red"></span></h1>
 {% if not group %}
@@ -8,23 +30,26 @@
 <p>
   new {{ team['name'].lower() }} {{ group['name'].lower() }} workout
 </p>
+<table id="summaryTable">
+    <tr>
+        <th>Subgroup</th>
+        <th>Total Yards</th>
+        <th>Total Time</th>
+        <th>Total Time w/ Rest</th>
+    </tr>
+</table><br />
 <form action={{ url_for('workout', group_id=group['id']) }} method="post" style="display: inline;">
   <label for='id' style='display: none;'>id</label>
   <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'>
-  <label for='total_time'>time</label>
-  <input type='text' id='total_time' name='total_time' maxlength="8" size="8">
-  <label for='total_time_with_rest'>time w/ rest</label>
-  <input type='text' id='total_time_with_rest' name='total_time_with_rest' maxlength="8" size="8">
-  <label for='total_yards'>yards</label>
-  <input type='text' id='total_yards' name='total_yards' maxlength="5" size="5">
-  <label for='last_pace'>pace</label>
-  <input type='text' id='last_pace' name='last_pace' maxlength="7" size="7"><br />
   <label for='date'>date</label>
   <input type='text' pattern="\d\d\d\d-\d\d-\d\d" id='date' name='date' value='{{ date or today }}'  maxlength="10" size="10">
   <label for='title'>title</label>
   <input type='text' id='title' name='title' value='{{ title }}'>
-  <label for='rest_interval'>rest (minutes)</label>
-  <input type='text' pattern="\d*" maxlength="4" size="4" id='rest_interval' name='rest_interval' value='{{ rest_interval or 2 }}'><br />
+  <label for='rest_interval'>rest (min)</label>
+  <input type='text' pattern="\d*" maxlength="4" size="4" id='rest_interval' name='rest_interval' value='{{ rest_interval or 2 }}'>
+  <input type='text' id='total_yards' name='total_yards' style="display: none;">
+  <label for='last_pace'>pace</label>
+  <input type='text' id='last_pace' name='last_pace' maxlength="7" size="7"><br /><br />
   <textarea id='workout' name='workout_text' style='width: 100%;height: 50vh' rows='50' onkeyup='process(event, this)'>{{ workout_text }}</textarea><br />
   <input type="submit" style="width: 100px;height: 50px" value="save">
 </form>
@@ -66,6 +91,9 @@
   let globalColor = 0;
 
   const timeToString = (data) => {
+      if (!data) {
+        return "00:00:00";
+      }
       let hours = Math.floor(data / 3600);
       data -= hours * 3600;
       let minutes = Math.floor(data / 60);
@@ -113,6 +141,23 @@
       const globalRestBetween = document.getElementById("rest_interval").value;
       const group = "{{ group['name'] }}"
       time_of_day = "";
+      let totalSubs = new Set();
+      data.forEach(line => {
+        if (setDes.test(line)) {
+            let array = setDes.exec(line);
+            if (line.match(subGroup)) {
+                sub_array = line.match(subGroup);
+                sub_array.forEach(sub => {
+                    totalSubs.add(sub);
+                });
+              }
+          }
+      });
+      total_subs = [...totalSubs]
+      if (total_subs.length == 0) {
+        total_subs.push("#everyone");
+      }
+
       document.getElementsByName('time_of_day').forEach((element) => {
           if (element.checked) {
               time_of_day = element.value;
@@ -123,9 +168,9 @@
           "time_of_day": time_of_day,
           "group": group,
           "title": document.getElementById('title').value,
-          "yards": 0,
-          "time": 0,
-          "rest": 0,
+          "yards": {},
+          "time": {},
+          "rest": {},
           "sets": [],
           "pace_seconds": 0
       };
@@ -148,8 +193,27 @@
               let int = array[5];
               let des = array[6];
               pace_seconds = (timeToInt(int) * 1.0) / dis * 100.0;
-              info.yards += currentRounds * rep * dis;
-              info.time += currentRounds * rep * timeToInt(int);
+              if (currentSubs.length) {
+                currentSubs.forEach(sub => {
+                    if (info.yards[sub]) {
+                        info.yards[sub] += currentRounds * rep * dis;
+                        info.time[sub] += currentRounds * rep * timeToInt(int);
+                    } else {
+                        info.yards[sub] = currentRounds * rep * dis;
+                        info.time[sub] = currentRounds * rep * timeToInt(int);
+                    }
+                });
+              } else {
+                total_subs.forEach(sub => {
+                    if (info.yards[sub]) {
+                        info.yards[sub] += currentRounds * rep * dis;
+                        info.time[sub] += currentRounds * rep * timeToInt(int);
+                    } else {
+                        info.yards[sub] = currentRounds * rep * dis;
+                        info.time[sub] = currentRounds * rep * timeToInt(int);
+                    }
+                });
+              }
               let currentLine = {
                   "rep": rep,
                   "dis": dis,
@@ -165,8 +229,27 @@
               let int = array[2];
               let des = array[3];
               pace_seconds = (timeToInt(int) * 1.0) / dis * 100.0;
-              info.yards += currentRounds * dis;
-              info.time += currentRounds * timeToInt(int);
+              if (currentSubs.length) {
+                currentSubs.forEach(sub => {
+                    if (info.yards[sub]) {
+                        info.yards[sub] += currentRounds * dis;
+                        info.time[sub] += currentRounds * timeToInt(int);
+                    } else {
+                        info.yards[sub] = currentRounds * dis;
+                        info.time[sub] = currentRounds * timeToInt(int);
+                    }
+                });
+              } else {
+                total_subs.forEach(sub => {
+                    if (info.yards[sub]) {
+                        info.yards[sub] += currentRounds * dis;
+                        info.time[sub] += currentRounds * timeToInt(int);
+                    } else {
+                        info.yards[sub] = currentRounds * dis;
+                        info.time[sub] = currentRounds * timeToInt(int);
+                    }
+                });
+              }
               let currentLine = {
                   "rep": rep,
                   "dis": dis,
@@ -184,7 +267,23 @@
               let dis = 0;
               let int = array[1];
               let des = array[2];
-              info.time += currentRounds * timeToInt(int);
+              if (currentSubs.length) {
+                currentSubs.forEach(sub => {
+                    if (info.yards[sub]) {
+                        info.time[sub] += currentRounds * timeToInt(int);
+                    } else {
+                        info.time[sub] = currentRounds * timeToInt(int);
+                    }
+                });
+              } else {
+                total_subs.forEach(sub => {
+                    if (info.yards[sub]) {
+                        info.time[sub] += currentRounds * timeToInt(int);
+                    } else {
+                        info.time[sub] = currentRounds * timeToInt(int);
+                    }
+                });
+              }
               let currentLine = {
                   "rep": rep,
                   "dis": dis,
@@ -195,7 +294,6 @@
               currentSet.lines.push(currentLine);
           } else if (setDes.test(line)) {
               let array = setDes.exec(line);
-              info.rest += timeToInt(globalRestBetween);
               currentSubs = [];
               if (line.match(subGroup)) {
                 sub_array = line.match(subGroup);
@@ -205,6 +303,25 @@
               }
               currentSet.subs = currentSubs;
               currentSet.des = array[1];
+
+              if (currentSubs.length) {
+                currentSubs.forEach(sub => {
+                    if (info.yards[sub]) {
+                        info.rest[sub] += timeToInt(globalRestBetween);
+                    } else {
+                        info.rest[sub] = timeToInt(globalRestBetween);
+                    }
+                });
+              } else {
+                total_subs.forEach(sub => {
+                    if (info.yards[sub]) {
+                        info.rest[sub] += timeToInt(globalRestBetween);
+                    } else {
+                        info.rest[sub] = timeToInt(globalRestBetween);
+                    }
+                });
+              }
+
           } else if (noteLine.test(line)) {
               let array = noteLine.exec(line);
               currentSet.lines.at(-1).notes.push(array[1]);
@@ -242,6 +359,7 @@
           info.sets.push(currentSet);
       }
       info.pace_seconds = pace_seconds
+      info.total_subs = total_subs;
       globalInfo = info;
       if (tooLong) {
           document.getElementById("workout").style.color = "red";
@@ -277,9 +395,46 @@
 
       let array = textArea.split('\n');
       let info = getInfo(array);
-      document.getElementById('total_yards').value = info.yards;
-      document.getElementById('total_time').value = timeToString(info.time);
-      document.getElementById('total_time_with_rest').value = timeToString(info.time + info.rest);
+
+      table = document.getElementById('summaryTable')
+      subs = info.total_subs
+
+      updated_subs = []
+      for (let i = 1; i < table.rows.length; ++i) {
+        let row = table.rows[i];
+        if (subs.includes(row.cells[0].innerHTML)) {
+            row.cells[1].innerHTML = info.yards[row.cells[0].innerHTML] || 0
+            row.cells[2].innerHTML = timeToString(info.time[row.cells[0].innerHTML])
+            row.cells[3].innerHTML = timeToString(info.time[row.cells[0].innerHTML] + info.rest[row.cells[0].innerHTML])
+            updated_subs.push(row.cells[0].innerHTML)
+        } else {
+            table.deleteRow(i);
+            i--;
+        }
+      }
+
+      subs.forEach(sub => {
+        if (!updated_subs.includes(sub)) {
+            row = table.insertRow()
+            subGroupName = row.insertCell();
+            yards = row.insertCell();
+            time_total = row.insertCell();
+            time_with_rest = row.insertCell();
+
+            subGroupName.innerHTML = sub;
+            yards.innerHTML = info.yards[sub] || 0;
+            time_with_rest.innerHTML = timeToString(info.time[sub]);
+            time_total.innerHTML = timeToString(info.time[sub] + info.rest[sub]);
+        }
+      });
+
+      max_yards = 0;
+      for (let key in info.yards) {
+        if (info.yards[key] > max_yards) {
+            max_yards = info.yards[key]
+        }
+      }
+      document.getElementById('total_yards').value = max_yards
       document.getElementById('last_pace').value = timeToShortString(info.pace_seconds)
   }
 
@@ -296,56 +451,65 @@
       const margin = 20;
 
       let pdf = new jsPDF({
-          unit: 'px'
+        unit: 'px'
       });
       logo_width = {{ team['logo_width'] }};
-      pdf.addImage("{{ team['image'] }}", 'jpeg', (426.5 - logo_width), 20, logo_width, 80);
-      pdf.setFont("Courier", "normal");
-      pdf.setFontSize(32);
+      sub_group_count = 0;
+      globalInfo.total_subs.forEach(sub => {
+        pdf.addImage("{{ team['image'] }}", 'jpeg', (426.5 - logo_width), 20, logo_width, 80);
+        pdf.setFont("Courier", "normal");
+        pdf.setFontSize(32);
 
-      pdf.text("{{ group['name'] }}", margin, 36);
-      pdf.setFontSize(20);
-      pdf.text(globalInfo.date, margin, 56);
-      pdf.setFontSize(18);
-      pdf.setFont("Courier", "italic");
-      pdf.text(globalInfo.title, margin, 76);
+        pdf.text("{{ group['name'] }} " + sub, margin, 36);
+        pdf.setFontSize(20);
+        pdf.text(globalInfo.date, margin, 56);
+        pdf.setFontSize(18);
+        pdf.setFont("Courier", "italic");
+        pdf.text(globalInfo.title, margin, 76);
 
-      pdf.setFontSize(16);
-      pdf.setFont("Courier", "normal");
+        pdf.setFontSize(16);
+        pdf.setFont("Courier", "normal");
 
-      let left = margin;
-      let top = 94;
-      globalInfo.sets.forEach(set => {
-          pdf.setFont("Courier", "bold");
-          if (set.des) {
-	      pdf.text(set.des, left, top);
-	      top += newLineDist;
-          }
-          pdf.setFont("Courier", "normal");
-          if (set.rounds != 1) {
-	      pdf.text(set.rounds + " x {", left, top);
-	      left = margin + tab;
-	      top += newLineDist;
-          }
-          set.lines.forEach(line => {
-	      pdf.text((line.rep > 1 ? line.rep + " x " : "") + (line.dis > 0 ? line.dis + " @ " : "") + line.int + " " + line.des, left, top);
-	      if (line.notes.length > 0) {
-                  pdf.setFontSize(12);
-                  pdf.setFont("Courier", "italic");
-                  line.notes.forEach(note => {
-		      top += smallerSpace;
-		      pdf.text('\u2022 ' + note, left + tab, top);
-                  });
-                  pdf.setFontSize(16);
-                  pdf.setFont("Courier", "normal");
-	      }
-	      top += newLineDist;
-          });
-          if (left === margin + tab) {
-	      left = margin;
-          }
-          top += smallerSpace;
+        let left = margin;
+        let top = 94;
+        globalInfo.sets.forEach(set => {
+            if (set.subs.length == 0 || set.subs.includes(sub)) {
+                pdf.setFont("Courier", "bold");
+                if (set.des) {
+                    pdf.text(set.des, left, top);
+                    top += newLineDist;
+                }
+                pdf.setFont("Courier", "normal");
+                if (set.rounds != 1) {
+                    pdf.text(set.rounds + " x {", left, top);
+                    left = margin + tab;
+                    top += newLineDist;
+                }
+                set.lines.forEach(line => {
+                    pdf.text((line.rep > 1 ? line.rep + " x " : "") + (line.dis > 0 ? line.dis + " @ " : "") + line.int + " " + line.des, left, top);
+                    if (line.notes.length > 0) {
+                        pdf.setFontSize(12);
+                        pdf.setFont("Courier", "italic");
+                        line.notes.forEach(note => {
+                            top += smallerSpace;
+                            pdf.text('\u2022 ' + note, left + tab, top);
+                        });
+                        pdf.setFontSize(16);
+                        pdf.setFont("Courier", "normal");
+                    }
+                    top += newLineDist;
+                });
+                if (left === margin + tab) {
+                    left = margin;
+                }
+                top += smallerSpace;
+            }
+        });
+        sub_group_count++;
+        pdf.addPage();
       });
+      var pageCount = pdf.internal.getNumberOfPages();
+      pdf.deletePage(pageCount)
       pdf.save(globalInfo.date + "_" + globalInfo.group + ".pdf");
   };
   // use our custom object to create a seconds file to use in the app
@@ -393,60 +557,61 @@
           folder.items.push(set);
       });
 
-      let wholeWorkout = {};
-      wholeWorkout.overrun = false;
-      wholeWorkout._type = "cust";
-      wholeWorkout.type = 0;
-      wholeWorkout.name = "Everything";
-      wholeWorkout.soundScheme = 1;
-      wholeWorkout.activity = 46;
-      wholeWorkout.intervals = [];
-      globalInfo.sets.forEach(setItem => {
-          let restLine = {};
-          restLine.splitRest = 0;
-          restLine.ducked = false;
-          restLine.rest = false;
-          restLine.color = (globalColor % 9) + 1;
-          restLine.indefinite = false;
-          restLine.split = false;
-          restLine.vibration = false;
-          restLine.halfwayAlert = false;
-          restLine.duration = timeToInt(globalRestBetween);
-          restLine._type = "int";
-          restLine.name = "Rest, Setting up Next Set";
-
-	  if(setItem.des) {
-	      wholeWorkout.intervals.push(restLine);
-	      globalColor++;
-	  }
-          for (let i = 0; i < setItem.rounds; i++) {
-	      setItem.lines.forEach(line => {
-                  for (let j = 0; j < line.rep; j++) {
-		      let secondsLine = {};
-		      secondsLine.splitRest = 0;
-		      secondsLine.ducked = false;
-		      secondsLine.rest = false;
-		      secondsLine.color = (globalColor % 9) + 1;
-		      secondsLine.indefinite = false;
-		      secondsLine.split = false;
-		      secondsLine.vibration = false;
-		      secondsLine.halfwayAlert = false;
-		      secondsLine.duration = timeToInt(line.int);
-		      secondsLine._type = "int";
-		      name_distance = (line.dis > 0 ? line.dis + " " : "")
-		      name_set_num = (line.rep == 1 ? "" : " (" + (j + 1) + "/" + line.rep + ")")
-		      name_round_num = (setItem.rounds == 1 ? "" : " [" + (i + 1) + "/" + setItem.rounds + "]")
-		      secondsLine.name = name_distance + line.des + name_set_num + name_round_num;
-
-		      wholeWorkout.intervals.push(secondsLine);
-                  }
-                  globalColor++;
-	      });
-          }
-          globalColor++;
+      globalInfo.total_subs.forEach(sub => {
+        let wholeWorkout = {};
+        wholeWorkout.overrun = false;
+        wholeWorkout._type = "cust";
+        wholeWorkout.type = 0;
+        wholeWorkout.name = "Everything " + sub;
+        wholeWorkout.soundScheme = 1;
+        wholeWorkout.activity = 46;
+        wholeWorkout.intervals = [];
+        globalInfo.sets.forEach(setItem => {
+            if (setItem.subs.length == 0 || setItem.subs.includes(sub)) {
+                let restLine = {};
+                restLine.splitRest = 0;
+                restLine.ducked = false;
+                restLine.rest = false;
+                restLine.color = (globalColor % 9) + 1;
+                restLine.indefinite = false;
+                restLine.split = false;
+                restLine.vibration = false;
+                restLine.halfwayAlert = false;
+                restLine.duration = timeToInt(globalRestBetween);
+                restLine._type = "int";
+                restLine.name = "Rest, Setting up Next Set";
+                if(setItem.des) {
+                    wholeWorkout.intervals.push(restLine);
+                    globalColor++;
+                }
+                for (let i = 0; i < setItem.rounds; i++) {
+                    setItem.lines.forEach(line => {
+                        for (let j = 0; j < line.rep; j++) {
+                            let secondsLine = {};
+                            secondsLine.splitRest = 0;
+                            secondsLine.ducked = false;
+                            secondsLine.rest = false;
+                            secondsLine.color = (globalColor % 9) + 1;
+                            secondsLine.indefinite = false;
+                            secondsLine.split = false;
+                            secondsLine.vibration = false;
+                            secondsLine.halfwayAlert = false;
+                            secondsLine.duration = timeToInt(line.int);
+                            secondsLine._type = "int";
+                            name_distance = (line.dis > 0 ? line.dis + " " : "")
+                            name_set_num = (line.rep == 1 ? "" : " (" + (j + 1) + "/" + line.rep + ")")
+                            name_round_num = (setItem.rounds == 1 ? "" : " [" + (i + 1) + "/" + setItem.rounds + "]")
+                            secondsLine.name = name_distance + line.des + name_set_num + name_round_num;
+                            wholeWorkout.intervals.push(secondsLine);
+                        }
+                        globalColor++;
+                    });
+                }
+                globalColor++;
+            }
+        });
+        folder.items.push(wholeWorkout);
       });
-      folder.items.push(wholeWorkout);
-
 
       seconds.items.push(folder);
 
@@ -461,24 +626,29 @@
       wk3_text += `<H>,Hy-Tek's Workout Export,\"Swift Aquatics - IL\",8.0Fe,2022,9,13,${date_list}\n`;
       wk3_text += "<G>,SR,\"Senior\"\n";
       wk3_text += "<S>,IM,\"IM'ers\"\n";
-      wk3_text += `<W>,1,${date_list},960,0,SR,IM,Y,1400,0\n`;
-      lineCount = 1
-      globalInfo.sets.forEach(setItem => {
-        if(setItem.des) {
-            let restLine = `<>,${lineCount},S,0,0,0,1,0,${restBetween},\"rest\",,,,,,,\n`;
-            wk3_text += restLine;
-            lineCount++;
-        }
-        for (let i = 0; i < setItem.rounds; i++) {
-	        setItem.lines.forEach(line => {
-                let setLine = `<>,${lineCount},S,0,0,0,${line.rep},${line.dis},${timeToInt(line.int)},\"${line.des}\",,,,,,,\n`
-                wk3_text += setLine
-                lineCount++;
-            });
-        }
+      subCount = 0
+      globalInfo.total_subs.forEach(sub => {
+        subCount++;
+        wk3_text += `<W>,${subCount},${date_list},960,0,SR,${sub},Y,0,0\n`;
+        lineCount = 1
+        globalInfo.sets.forEach(setItem => {
+            if (setItem.subs.length == 0 || setItem.subs.includes(sub)) {
+                if(setItem.des) {
+                    let restLine = `<>,${lineCount},S,0,0,0,1,0,${restBetween},\"rest\",,,,,,,\n`;
+                    wk3_text += restLine;
+                    lineCount++;
+                }
+                for (let i = 0; i < setItem.rounds; i++) {
+                    setItem.lines.forEach(line => {
+                        let setLine = `<>,${lineCount},S,0,0,0,${line.rep},${line.dis},${timeToInt(line.int)},\"${line.des}\",,,,,,,\n`
+                        wk3_text += setLine
+                        lineCount++;
+                    });
+                }
+            }
+        });
+        wk3_text += `<N>\n<Z>\n`;
       });
-
-      wk3_text += `<N>\n<Z>`;
       document.getElementById('wk3_text').value = wk3_text
   }
 

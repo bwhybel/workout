@@ -423,8 +423,8 @@ tr:nth-child(odd) {
 
             subGroupName.innerHTML = sub;
             yards.innerHTML = info.yards[sub] || 0;
-            time_with_rest.innerHTML = timeToString(info.time[sub]);
-            time_total.innerHTML = timeToString(info.time[sub] + info.rest[sub]);
+            time_with_rest.innerHTML = timeToString(info.time[sub] + info.rest[sub]);
+            time_total.innerHTML = timeToString(info.time[sub]);
         }
       });
 

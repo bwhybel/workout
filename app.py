@@ -198,7 +198,7 @@ def workouts(group_id):
 
   workouts_data = list(
     get_container_workouts().query_items(
-      query='SELECT w.id, w.date, w.title, w.distance FROM workouts w WHERE w.group_id = \'{}\' ORDER BY w.date'.format(group_id),
+      query='SELECT w.id, w.date, w.title, w.distance FROM workouts w WHERE w.group_id = \'{}\' ORDER BY w.date DESC'.format(group_id),
       enable_cross_partition_query=True
     )
   )

@@ -177,7 +177,8 @@ def group():
   return redirect(url_for('write_group_id', id=id), code=301)
 
 @app.route('/workouts/<group_id>')
-def workouts(group_id):
+@app.route('/workouts/<group_id>/<page>')
+def workouts(group_id, page=1):
   groups = get_container_groups().query_items(
     query='SELECT * FROM groups g WHERE g.id = \'{}\''.format(group_id),
     enable_cross_partition_query=True
@@ -198,7 +199,7 @@ def workouts(group_id):
 
   workouts_data = list(
     get_container_workouts().query_items(
-      query='SELECT w.id, w.date, w.title, w.distance FROM workouts w WHERE w.group_id = \'{}\' ORDER BY w.date DESC'.format(group_id),
+      query='SELECT w.id, w.date, w.title, w.distance FROM workouts w WHERE w.group_id = \'{}\' ORDER BY w.date DESC LIMIT 10 OFFSET {}'.format(group_id, (page - 1) * 10),
       enable_cross_partition_query=True
     )
   )

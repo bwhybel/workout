@@ -15,20 +15,20 @@ li {
   justify-content: space-between;
   cursor: pointer;
 }
-    
+
 .date {
   font-weight: bold;
   color: #333;
   text-align: left;
 }
-    
+
 .title {
   margin-top: 5px;
   font-weight: bold;
   color: #555;
   text-align: center;
 }
-    
+
 .distance {
   margin-top: 5px;
   color: #888;
@@ -47,6 +47,11 @@ li {
   </li>
   {% endfor %}
 </ul>
+<div>
+  {% if page - 1 > 0 %}
+  <a href={{ url_for('workouts', group_id=group_id, page=page-1) }}>previous</a>
+  {% endif %}
+  <a href={{ url_for('workouts', group_id=group_id, page=page+1) }}>next</a></div>
 <script>
 function redirectToWorkout(url) {
   window.location.href = url;

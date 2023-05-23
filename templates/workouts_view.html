@@ -1,10 +1,55 @@
 {% extends 'base.html' %}
+{% block style %}
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+    
+.date {
+  font-weight: bold;
+  color: #333;
+  text-align: left;
+}
+    
+.title {
+  margin-top: 5px;
+  font-weight: bold;
+  color: #555;
+  text-align: center;
+}
+    
+.distance {
+  margin-top: 5px;
+  color: #888;
+  text-align: right;
+}
+{% endblock %}
 {% block content %}
 <h1>{% block title %}group's workouts{% endblock %}</h1>
 <p>{{ team_name.lower() }} {{ group_name.lower() }} workouts <a href={{ url_for('write_workout', group_id=group_id) }}>new</a></p>
 <ul>
   {% for workout in workouts %}
-  <li><a href={{ url_for('write_workout_id', id=workout['id']) }}>{{ workout['date'] }} {{ workout['title'].lower() }} ({{ workout['distance'] }})</a></li>
+  <li onclick="redirectToWorkout('{{ url_for('write_workout_id', id=workout['id']) }}')">
+    <span class="date">{{ workout['date'] }}</span>
+    <div class="title">{{ workout['title'].lower() }}</div>
+    <div class="distance">{{ workout['distance'] }}</div>
+  </li>
   {% endfor %}
 </ul>
+<script>
+function redirectToWorkout(url) {
+  window.location.href = url;
+}
+</script>
 {% endblock %}

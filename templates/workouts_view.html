@@ -36,6 +36,11 @@ li {
   text-align: center;
 }
 
+.home {
+  background-color: #ffffe0;
+  text-align: center;
+}
+
 .new {
   background-color: #add8e6;
   text-align: center;
@@ -67,6 +72,11 @@ li {
 {% block content %}
 <h1>{% block title %}{{ team_name.lower() }} {{ group_name.lower() }} workouts{% endblock %}</h1>
 <ul>
+  <li class="home" onclick="redirectToWorkout('{{ url_for('index') }}')">
+    <div class="date">&nbsp;</div>
+    <div class="title">home</div>
+    <div class="distance">&nbsp;</div>
+  </li>
   <li class="new" onclick="redirectToWorkout('{{ url_for('write_workout', group_id=group_id) }}')">
     <div class="date">&nbsp;</div>
     <div class="title">write new workout</div>

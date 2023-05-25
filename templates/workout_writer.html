@@ -29,6 +29,17 @@ textarea {
   resize: none;
 }
 
+.go_home {
+    margin-bottom: 10px;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ccc;
+    background-color: #ffffe0;
+    border-radius: 5px;
+    cursor: pointer;
+    height: 14px;
+}
+
 .go_to_workouts {
   margin-bottom: 10px;
   padding: 10px;
@@ -45,6 +56,7 @@ textarea {
 {% if not group %}
 <p> uhh this isn't an actual group you can write workouts for </p>
 {% else %}
+<div onclick="go_to_url('{{ url_for('index') }}')" class="go_home">home</div>
 <div onclick="go_to_url('{{ url_for('workouts', group_id=group['id']) }}')" class="go_to_workouts">all {{ team['name'].lower() }} {{ group['name'].lower() }} workouts</div>
 <table id="summaryTable">
     <tr>

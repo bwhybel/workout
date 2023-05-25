@@ -28,16 +28,24 @@ textarea {
   background-color: #f2f2f2;
   resize: none;
 }
+
+.go_to_workouts {
+  margin-bottom: 10px;
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #ccc;
+  background-color: #90EE90;
+  border-radius: 5px;
+  cursor: pointer;
+  height: 14px;
+}
 {% endblock %}
 {% block content %}
-<h1>{% block title %}writing a new workout{% endblock %} <span id="edited" style="color: red"></span></h1>
+<h1>{% block title %}writing a {{ group['name'].lower() }} workout{% endblock %} <span id="edited" style="color: red"></span></h1>
 {% if not group %}
 <p> uhh this isn't an actual group you can write workouts for </p>
 {% else %}
-<p><a href={{ url_for('workouts', group_id=group['id']) }}>{{ team['name'].lower() }} {{ group['name'].lower() }} workouts</a></p>
-<p>
-  new {{ team['name'].lower() }} {{ group['name'].lower() }} workout
-</p>
+<div onclick="go_to_url('{{ url_for('workouts', group_id=group['id']) }}')" class="go_to_workouts">all {{ team['name'].lower() }} {{ group['name'].lower() }} workouts</div>
 <table id="summaryTable">
     <tr>
         <th>Subgroup</th>
@@ -83,6 +91,10 @@ textarea {
   </form>
 <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
 <script>
+  const go_to_url = (url) => {
+    window.location.href = url;
+  }
+
   const setLine = new RegExp('^(\\s|{)*(\\d+)\\s*(x|\u{00D7})\\s*(\\d+)\\s*@\\s*(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d|\\d\\d|\\d)\\s+(.*)$');
   const noRepLine = new RegExp('^(\\d+)\\s*@\\s*(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d|\\d\\d|\\d)\\s+(.*)$');
   const roundLine = new RegExp('(\\d+)\\s*(x|\u{00D7})\\s*{$');

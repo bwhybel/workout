@@ -32,27 +32,16 @@ def get_db():
   return g.database
 
 
-def get_container_workouts():
-  if not hasattr(g, 'container'):
-    g.container_workouts = get_db().get_container_client('workouts')
-  return g.container_workouts
-
-
-def get_container_teams():
-  if not hasattr(g, 'container'):
-    g.container_teams = get_db().get_container_client('teams')
-  return g.container_teams
-
-
-def get_container_groups():
-  if not hasattr(g, 'container'):
-    g.container_groups = get_db().get_container_client('groups')
-  return g.container_groups
+def get_container(name):
+  container_global_name = f'container_{name}'
+  if not hasattr(g, container_global_name):
+    setattr(g, container_global_name, get_db().get_container_client(name))
+  return getattr(g, container_global_name)
 
 
 def get_groups():
   return list(
-    get_container_groups().query_items(
+    get_container('groups').query_items(
       query='SELECT * FROM groups g',
       enable_cross_partition_query=True
     )
@@ -60,7 +49,7 @@ def get_groups():
 
 def get_teams():
   return list(
-    get_container_teams().query_items(
+    get_container('teams').query_items(
       query='SELECT * FROM teams t',
       enable_cross_partition_query=True
     )
@@ -92,7 +81,7 @@ def write_team():
 
 @app.route('/team/<id>')
 def write_team_id(id):
-  teams = get_container_teams().query_items(
+  teams = get_container('teams').query_items(
     query='SELECT * FROM teams t WHERE t.id = \'{}\''.format(id),
     enable_cross_partition_query=True
   )
@@ -120,7 +109,7 @@ def team():
   code = request.form.get('code')
   image = request.form.get('image')
   logo_width = request.form.get('logo_width')
-  get_container_teams().upsert_item(
+  get_container('teams').upsert_item(
     {
       'id': id,
       'name': name,
@@ -139,7 +128,7 @@ def write_group():
 
 @app.route('/group/<id>')
 def write_group_id(id):
-  groups = get_container_groups().query_items(
+  groups = get_container('groups').query_items(
     query='SELECT * FROM groups g WHERE g.id = \'{}\''.format(id),
     enable_cross_partition_query=True
   )
@@ -166,7 +155,7 @@ def group():
   name = request.form.get('name')
   code = request.form.get('code')
   team = request.form.get('team')
-  get_container_groups().upsert_item(
+  get_container('groups').upsert_item(
     {
       'id': id,
       'name': name,
@@ -179,7 +168,7 @@ def group():
 @app.route('/workouts/<group_id>')
 @app.route('/workouts/<group_id>/<int:page>')
 def workouts(group_id, page=1):
-  groups = get_container_groups().query_items(
+  groups = get_container('groups').query_items(
     query='SELECT * FROM groups g WHERE g.id = \'{}\''.format(group_id),
     enable_cross_partition_query=True
   )
@@ -188,7 +177,7 @@ def workouts(group_id, page=1):
   for group in groups:
     real_group = group
 
-  teams = get_container_teams().query_items(
+  teams = get_container('teams').query_items(
     query='SELECT * FROM teams t WHERE t.id = \'{}\''.format(real_group['team_id']),
     enable_cross_partition_query=True
   )
@@ -198,7 +187,7 @@ def workouts(group_id, page=1):
     real_team = team
 
   workouts_data = list(
-    get_container_workouts().query_items(
+    get_container('workouts').query_items(
       query='SELECT w.id, w.date, w.title, w.distance FROM workouts w WHERE w.group_id = \'{}\' ORDER BY w.date DESC OFFSET {} LIMIT 10'.format(group_id, (page - 1) * 10),
       enable_cross_partition_query=True
     )
@@ -219,7 +208,7 @@ def workout(group_id):
   id = request.form.get('id')
   if not id:
     id = random_id()
-  get_container_workouts().upsert_item(
+  get_container('workouts').upsert_item(
     {
       'id': id,
       'group_id': group_id,
@@ -234,13 +223,13 @@ def workout(group_id):
 
 @app.route('/delete_workout/<workout_id>')
 def delete_workout(workout_id):
-  get_container_workouts().delete_item(item=workout_id, partition_key=workout_id)
+  get_container('workouts').delete_item(item=workout_id, partition_key=workout_id)
   return redirect(url_for('index'), code=301)
 
 
 @app.route('/workout/<group_id>')
 def write_workout(group_id):
-  groups = get_container_groups().query_items(
+  groups = get_container('groups').query_items(
     query='SELECT * FROM groups g WHERE g.id = \'{}\''.format(group_id),
     enable_cross_partition_query=True
   )
@@ -254,7 +243,7 @@ def write_workout(group_id):
       'workout_writer.html'
     )
 
-  teams = get_container_teams().query_items(
+  teams = get_container('teams').query_items(
     query='SELECT * FROM teams t WHERE t.id = \'{}\''.format(real_group['team_id']),
     enable_cross_partition_query=True
   )
@@ -273,7 +262,7 @@ def write_workout(group_id):
 
 @app.route('/workout/id/<id>')
 def write_workout_id(id):
-  workouts = get_container_workouts().query_items(
+  workouts = get_container('workouts').query_items(
     query='SELECT * FROM workouts w WHERE w.id = \'{}\''.format(id),
     enable_cross_partition_query=True
   )
@@ -282,7 +271,7 @@ def write_workout_id(id):
   for workout in workouts:
     real_workout = workout
 
-  groups = get_container_groups().query_items(
+  groups = get_container('groups').query_items(
     query='SELECT * FROM groups g WHERE g.id = \'{}\''.format(real_workout['group_id']),
     enable_cross_partition_query=True
   )
@@ -291,7 +280,7 @@ def write_workout_id(id):
   for group in groups:
     real_group = group
 
-  teams = get_container_teams().query_items(
+  teams = get_container('teams').query_items(
     query='SELECT * FROM teams t WHERE t.id = \'{}\''.format(real_group['team_id']),
     enable_cross_partition_query=True
   )

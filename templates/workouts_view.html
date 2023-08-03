@@ -77,11 +77,13 @@ li {
     <div class="title">home</div>
     <div class="distance">&nbsp;</div>
   </li>
+  {% if should_write %}
   <li class="new" onclick="redirectToWorkout('{{ url_for('write_workout', group_id=group_id) }}')">
     <div class="date">&nbsp;</div>
     <div class="title">write new workout</div>
     <div class="distance">&nbsp;</div>
   </li>
+  {% endif %}
   {% for workout in workouts %}
   <li onclick="redirectToWorkout('{{ url_for('write_workout_id', id=workout['id']) }}')">
     <div class="date">{{ workout['date'] }}</div>

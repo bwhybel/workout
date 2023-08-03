@@ -1,13 +1,22 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>{% block title %}writing workouts{% endblock %}</h1>
+<form action={{ url_for('code') }} method="post">
+  <label for='code'>code</label>
+  <input type='password' id='code' name='code'>
+  <input type='submit' value='submit'>
+</form>
+
+
 {% for team_id in team_ids_to_groups.keys() %}
-<p>{{ team_ids_to_names[team_id].lower() }} [<a href={{ url_for('write_team_id', id=team_id) }}>edit</a>]</p>
+<p>{{ team_ids_to_names[team_id].lower() }}{% if should_edit_teams %} [<a href={{ url_for('write_team_id', id=team_id) }}>edit</a>]{% endif %}</p>
 <ul>
   {% for group in team_ids_to_groups[team_id] %}
-  <li>{{ group['name'].lower() }} [<a href={{ url_for('write_group_id', id=group['id']) }}>edit</a>] [<a href={{ url_for('workouts', group_id=group['id']) }}>workouts</a>] [<a href={{ url_for('write_workout', group_id=group['id']) }}>new workout</a>]</li>
+  <li>{{ group['name'].lower() }} {% if should_edit_groups %}[<a href={{ url_for('write_group_id', id=group['id']) }}>edit</a>] {% endif %}[<a href={{ url_for('workouts', group_id=group['id']) }}>workouts</a>] {% if should_write_workouts %}[<a href={{ url_for('write_workout', group_id=group['id']) }}>new workout</a>]{% endif %}</li>
   {% endfor %}
 </ul>
 {% endfor %}
+{% if should_create_new_teams_and_workouts %}
 <p>[<a href={{ url_for('write_team') }}>new team</a>] [<a href={{ url_for('write_group') }}>new group</a>]</p>
+{% endif %}
 {% endblock %}

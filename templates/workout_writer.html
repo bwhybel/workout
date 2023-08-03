@@ -79,9 +79,9 @@ textarea {
   <label for='last_pace'>pace</label>
   <input type='text' id='last_pace' name='last_pace' maxlength="7" size="7"><br /><br />
   <textarea id='workout' name='workout_text' style='width: 100%;height: 50vh' rows='50' onkeyup='process(event, this)'>{{ workout_text }}</textarea><br />
-  <input type="submit" style="width: 100px;height: 50px" value="save">
+  {% if should_save %}<input type="submit" style="width: 100px;height: 50px" value="save">{% endif %}
 </form>
-{% if id %}
+{% if id and should_save %}
 <form style="display: inline;" action={{ url_for('delete_workout', workout_id=id) }}>
   <input style="width: 100px;height: 50px" type='submit' value='delete'>
 </form>

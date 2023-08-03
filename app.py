@@ -55,9 +55,9 @@ def get_teams():
     )
   )
 
-def get_permission_and_team(cookie):
+def get_permission_and_teams(cookie):
   permission = None
-  team_id = None
+  team_ids = None
   if cookie:
     permissions = list(get_container('code_to_permission').query_items(
       query = f"SELECT * FROM code_to_permission c WHERE c.cookie = '{cookie}'",
@@ -65,49 +65,51 @@ def get_permission_and_team(cookie):
     ))
     if len(permissions) > 0:
       permission = permissions[0]['permission']
-      team_id = permissions[0]['team_id']
-  return permission, team_id
+      team_ids = permissions[0]['team_ids']
+  return permission, team_ids
 
 
 @app.route('/')
 def index():
   cookie = request.cookies.get('workouts_permissions')
-  permission, team_id = get_permission_and_team(cookie)
+  permission, team_ids = get_permission_and_teams(cookie)
 
   team_ids_to_groups = {}
   team_ids_to_names = {}
-  if team_id:
-    team = list(get_container('teams').query_items(
-      query = f"SELECT * FROM teams t WHERE t.id = '{team_id}'",
-      enable_cross_partition_query = True
-    ))[0]
+  if team_ids:
+    for team_id in team_ids:
+      team = list(get_container('teams').query_items(
+        query = f"SELECT * FROM teams t WHERE t.id = '{team_id}'",
+        enable_cross_partition_query = True
+      ))[0]
 
-    groups = get_container('groups').query_items(
-      query = f"SELECT * FROM groups g WHERE g.team_id = '{team_id}'",
-      enable_cross_partition_query = True
-    )
-    
-    team_ids_to_groups[team['id']] = list(groups)
-    team_ids_to_names[team['id']] = team['name']
+      groups = get_container('groups').query_items(
+        query = f"SELECT * FROM groups g WHERE g.team_id = '{team_id}'",
+        enable_cross_partition_query = True
+      )
+      
+      team_ids_to_groups[team['id']] = list(groups)
+      team_ids_to_names[team['id']] = team['name']
 
   return render_template(
     'index.html',
     team_ids_to_groups = team_ids_to_groups,
     team_ids_to_names = team_ids_to_names,
     should_edit_teams = permission == 'rwe',
-    should_edit_groups = permission == 'rwe',
+    should_edit_groups = permission == 'rw' or permission == 'rwe',
     should_write_workouts = permission == 'rw' or permission == 'rwe',
-    should_create_new_teams_and_workouts = permission == 'rwe'
+    should_create_new_teams = permission == 'rwe',
+    should_create_new_groups = permission == 'rw' or permission == 'rwe'
   )
 
 
 @app.route('/team')
 def write_team():
   cookie = request.cookies.get('workouts_permissions')
-  permission, _ = get_permission_and_team(cookie)
+  permission, _ = get_permission_and_teams(cookie)
 
   if permission != 'rwe':
-    return redirect(url_for('index'), code = 301)
+    return redirect(url_for('index'), code = 302)
 
   return render_template('team_writer.html')
 
@@ -115,10 +117,10 @@ def write_team():
 @app.route('/team/<id>')
 def write_team_id(id):
   cookie = request.cookies.get('workouts_permissions')
-  permission, _ = get_permission_and_team(cookie)
+  permission, _ = get_permission_and_teams(cookie)
 
   if permission != 'rwe':
-    return redirect(url_for('index'), code = 301)
+    return redirect(url_for('index'), code = 302)
 
   teams = get_container('teams').query_items(
     query = f"SELECT * FROM teams t WHERE t.id = '{id}'",
@@ -182,10 +184,10 @@ def code():
 @app.route('/group')
 def write_group():
   cookie = request.cookies.get('workouts_permissions')
-  permission, _ = get_permission_and_team(cookie)
+  permission, _ = get_permission_and_teams(cookie)
 
-  if permission != 'rwe':
-    return redirect(url_for('index'), code = 301)
+  if permission not in ['rw', 'rwe']:
+    return redirect(url_for('index'), code = 302)
 
   return render_template('group_writer.html', teams = get_teams())
 
@@ -193,10 +195,10 @@ def write_group():
 @app.route('/group/<id>')
 def write_group_id(id):
   cookie = request.cookies.get('workouts_permissions')
-  permission, _ = get_permission_and_team(cookie)
+  permission, _ = get_permission_and_teams(cookie)
 
-  if permission != 'rwe':
-    return redirect(url_for('index'), code = 301)
+  if permission not in ['rw', 'rwe']:
+    return redirect(url_for('index'), code = 302)
 
   groups = get_container('groups').query_items(
     query = f"SELECT * FROM groups g WHERE g.id = '{id}'",
@@ -225,6 +227,12 @@ def group():
   name = request.form.get('name')
   code = request.form.get('code')
   team = request.form.get('team')
+
+  cookie = request.cookies.get('workouts_permissions')
+  permission, team_ids = get_permission_and_teams(cookie)
+  if (permission != 'rw' and permission != 'rwe') or team not in team_ids:
+    return redirect(url_for('index'), code = 301)
+
   get_container('groups').upsert_item(
     {
       'id': id,
@@ -257,9 +265,9 @@ def workouts(group_id, page = 1):
     real_team = team
 
   cookie = request.cookies.get('workouts_permissions')
-  permission, team_id = get_permission_and_team(cookie)
+  permission, team_ids = get_permission_and_teams(cookie)
 
-  if team_id != real_team['id']:
+  if real_team['id'] not in team_ids:
     return redirect(url_for('index'), code = 301)
 
   workouts_data = list(
@@ -330,9 +338,9 @@ def write_workout(group_id):
     real_team = team
 
   cookie = request.cookies.get('workouts_permissions')
-  permission, team_id = get_permission_and_team(cookie)
+  permission, team_ids = get_permission_and_teams(cookie)
 
-  if team_id != real_team['id']:
+  if real_team['id'] not in team_ids:
     return redirect(url_for('index'), code = 301)
 
   return render_template(
@@ -374,9 +382,9 @@ def write_workout_id(id):
     real_team = team
 
   cookie = request.cookies.get('workouts_permissions')
-  permission, team_id = get_permission_and_team(cookie)
+  permission, team_ids = get_permission_and_teams(cookie)
 
-  if team_id != real_team['id']:
+  if real_team['id'] not in team_ids:
     return redirect(url_for('index'), code = 301)
 
   return render_template(

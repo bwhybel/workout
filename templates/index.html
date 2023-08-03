@@ -16,7 +16,5 @@
   {% endfor %}
 </ul>
 {% endfor %}
-{% if should_create_new_teams_and_workouts %}
-<p>[<a href={{ url_for('write_team') }}>new team</a>] [<a href={{ url_for('write_group') }}>new group</a>]</p>
-{% endif %}
+<p>{% if should_create_new_teams %}[<a href={{ url_for('write_team') }}>new team</a>]{% endif %}{% if should_create_new_groups %} [<a href={{ url_for('write_group') }}>new group</a>]{% endif %}</p>
 {% endblock %}

@@ -12,6 +12,10 @@ th, td {
   border-bottom: 1px solid #ddd;
 }
 
+tr:first-child {
+  font-weight: bold;
+}
+
 /* Styles for alternating row colors */
 tr:nth-child(even) {
   background-color: #f2f2f2;
@@ -58,22 +62,17 @@ textarea {
 {% else %}
 <div onclick="go_to_url('{{ url_for('index') }}')" class="go_home">home</div>
 <div onclick="go_to_url('{{ url_for('workouts', group_id=group['id']) }}')" class="go_to_workouts">all {{ team['name'].lower() }} {{ group['name'].lower() }} workouts</div>
-<table id="summaryTable">
-    <tr>
-        <th>Subgroup</th>
-        <th>Total Yards</th>
-        <th>Total Time</th>
-        <th>Total Time w/ Rest</th>
-    </tr>
-</table><br />
+<table id="summaryTable"></table><br />
 <form action={{ url_for('workout', group_id=group['id']) }} method="post" style="display: inline;">
   <label for='id' style='display: none;'>id</label>
   <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'>
   <label for='date'>date</label>
   <input type='text' pattern="\d\d\d\d-\d\d-\d\d" id='date' name='date' value='{{ date or today }}'  maxlength="10" size="10">
+  <input type="radio" id="am" name="timeOfDay"><label for="am">AM</label>
+  <input type="radio" id="pm" name="timeOfDay" checked><label for="pm">PM</label>
   <label for='title'>title</label>
-  <input type='text' id='title' name='title' value='{{ title }}'>
-  <label for='rest_interval'>rest (min)</label>
+  <input type='text' id='title' name='title' value='{{ title }}' style="width: 160px;">
+  <label for='rest_interval'>rest</label>
   <input type='text' pattern="\d*" maxlength="4" size="4" id='rest_interval' name='rest_interval' value='{{ rest_interval or 2 }}'>
   <input type='text' id='total_yards' name='total_yards' style="display: none;">
   <label for='last_pace'>pace</label>
@@ -86,565 +85,85 @@ textarea {
   <input style="width: 100px;height: 50px" type='submit' value='delete'>
 </form>
 {% endif %}
-<button style="width: 100px;height: 50px" id="clickbind">pdf</button>
-<form onsubmit='make_seconds()' action={{ url_for('download_seconds') }} method="post" style="display: inline;">
-  <input style='display: none;' type='text' name='id' id='id' value='{{ id }}'>
-  <input style='display: none;' type='text' name='date' id='date' value='{{ date }}'>
-  <input style='display: none;' type='text' name='group' id='group' value="{{ group['name'] }}">
-  <input style='display: none;' type='text' name='seconds_json' id='seconds_json'>
-  <input style="width: 100px;height: 50px" type="submit" value="seconds">
-</form>
+
+<button onclick="download_seconds()">seconds</button>
+<button onclick="download_pdf()">pdf</button>
+
 <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+<script src={{ url_for('static', filename='seconds_to_string.js') }}></script>
+<script src={{ url_for('static', filename='time_string_to_seconds.js') }}></script>
+<script src={{ url_for('static', filename='set_line_to_json.js') }}></script>
+<script src={{ url_for('static', filename='round_line_to_rounds.js') }}></script>
+<script src={{ url_for('static', filename='workout_text_to_json.js') }}></script>
+<script src={{ url_for('static', filename='note_line_to_json.js') }}></script>
+<script src={{ url_for('static', filename='title_to_subgroups.js') }}></script>
+<script src={{ url_for('static', filename='title_without_subgroups.js') }}></script>
+<script src={{ url_for('static', filename='get_all_subgroups_data.js') }}></script>
+<script src={{ url_for('static', filename='workout_json_to_pdf.js') }}></script>
+<script src={{ url_for('static', filename='workout_json_to_seconds.js') }}></script>
+<script src={{ url_for('static', filename='subgroups_data_to_table.js') }}></script>
+<script src={{ url_for('static', filename='line_json_to_text.js') }}></script>
 <script>
-  const go_to_url = (url) => {
-    window.location.href = url;
-  }
-
-  const setLine = new RegExp('^(\\s|{)*(\\d+)\\s*(x|\u{00D7})\\s*(\\d+)\\s*@\\s*(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d|\\d\\d|\\d)\\s+(.*)$');
-  const noRepLine = new RegExp('^(\\d+)\\s*@\\s*(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d|\\d\\d|\\d)\\s+(.*)$');
-  const roundLine = new RegExp('(\\d+)\\s*(x|\u{00D7})\\s*{$');
-  const setDes = new RegExp('//\\s*(.*)');
-  const subGroup = /#\w+/g;
-  const noteLine = new RegExp('--\\s*(.*)');
-  const endRoundLine = new RegExp('^}$');
-  const restLine = new RegExp('^(\\d\\d:\\d\\d|\\d:\\d\\d|:\\d\\d)\\s*(.*)$')
-  const time0 = new RegExp('^(\\d\\d):(\\d\\d)$');
-  const time1 = new RegExp('^(\\d):(\\d\\d)$');
-  const time2 = new RegExp('^:(\\d\\d)$');
-  const time3 = new RegExp('^(\\d\\d)$');
-  const time4 = new RegExp('^(\\d)$');
-  let globalColor = 0;
-
-  const timeToString = (data) => {
-      if (!data) {
-        return "00:00:00";
-      }
-      let hours = Math.floor(data / 3600);
-      data -= hours * 3600;
-      let minutes = Math.floor(data / 60);
-      data -= minutes * 60;
-      let seconds = data;
-      return hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + ":" + seconds.toString().padStart(2, '0');
-  }
-
-  const timeToShortString = (data) => {
-    let hours = Math.floor(data / 3600);
-    data -= hours * 3600;
-    let minutes = Math.floor(data / 60);
-    data -= minutes * 60;
-    let seconds = Math.round(data * 10.0) / 10.0;
-    return minutes.toString().padStart(2, '0') + ":" + seconds.toString().padStart(2, '0');
-  }
-
-  const timeToInt = (data) => {
-      if (time0.test(data)) {
-          let array = time0.exec(data);
-          return parseInt(array[1], 10) * 60 + parseInt(array[2], 10);
-      }
-      if (time1.test(data)) {
-          let array = time1.exec(data);
-          return parseInt(array[1], 10) * 60 + parseInt(array[2], 10);
-      }
-      if (time2.test(data)) {
-          let array = time2.exec(data);
-          return parseInt(array[1], 10);
-      }
-      if (time3.test(data)) {
-          let array = time3.exec(data);
-          return parseInt(array[1], 10);
-      }
-      if (time4.test(data)) {
-          let array = time4.exec(data);
-          return parseInt(array[1], 10) * 60;
-      }
-      alert("This is a problem");
-      return 0;
-  }
-
-  // parse string into our custom object
-  function getInfo(data) {
-      const globalRestBetween = document.getElementById("rest_interval").value;
-      const group = "{{ group['name'] }}"
-      time_of_day = "";
-      let totalSubs = new Set();
-      data.forEach(line => {
-        if (setDes.test(line)) {
-            let array = setDes.exec(line);
-            if (line.match(subGroup)) {
-                sub_array = line.match(subGroup);
-                sub_array.forEach(sub => {
-                    totalSubs.add(sub);
-                });
-              }
-          }
-      });
-      total_subs = [...totalSubs]
-      if (total_subs.length == 0) {
-        total_subs.push("#everyone");
-      }
-
-      document.getElementsByName('time_of_day').forEach((element) => {
-          if (element.checked) {
-              time_of_day = element.value;
-          }
-      });
-      info = {
-          "date": document.getElementById('date').value.replace("/", "-"),
-          "time_of_day": time_of_day,
-          "group": group,
-          "title": document.getElementById('title').value,
-          "yards": {},
-          "time": {},
-          "rest": {},
-          "sets": [],
-          "pace_seconds": 0
-      };
-      currentRounds = 1;
-      let currentSubs = []
-      let currentSet = {
-          des: "",
-          lines: [],
-          rounds: 1,
-          subs: currentSubs
-      };
-      let tooLong = false;
-
-      pace_seconds = 0
-      data.forEach(line => {
-          if (setLine.test(line)) {
-              let array = setLine.exec(line);
-              let rep = parseInt(array[2], 10);
-              let dis = parseInt(array[4], 10);
-              let int = array[5];
-              let des = array[6];
-              pace_seconds = (timeToInt(int) * 1.0) / dis * 100.0;
-              if (currentSubs.length) {
-                currentSubs.forEach(sub => {
-                    if (info.yards[sub]) {
-                        info.yards[sub] += currentRounds * rep * dis;
-                        info.time[sub] += currentRounds * rep * timeToInt(int);
-                    } else {
-                        info.yards[sub] = currentRounds * rep * dis;
-                        info.time[sub] = currentRounds * rep * timeToInt(int);
-                    }
-                });
-              } else {
-                total_subs.forEach(sub => {
-                    if (info.yards[sub]) {
-                        info.yards[sub] += currentRounds * rep * dis;
-                        info.time[sub] += currentRounds * rep * timeToInt(int);
-                    } else {
-                        info.yards[sub] = currentRounds * rep * dis;
-                        info.time[sub] = currentRounds * rep * timeToInt(int);
-                    }
-                });
-              }
-              let currentLine = {
-                  "rep": rep,
-                  "dis": dis,
-                  "int": int,
-                  "des": des,
-                  "notes": []
-              };
-              currentSet.lines.push(currentLine);
-          } else if (noRepLine.test(line)) {
-              let array = noRepLine.exec(line);
-              let rep = 1;
-              let dis = parseInt(array[1], 10);
-              let int = array[2];
-              let des = array[3];
-              pace_seconds = (timeToInt(int) * 1.0) / dis * 100.0;
-              if (currentSubs.length) {
-                currentSubs.forEach(sub => {
-                    if (info.yards[sub]) {
-                        info.yards[sub] += currentRounds * dis;
-                        info.time[sub] += currentRounds * timeToInt(int);
-                    } else {
-                        info.yards[sub] = currentRounds * dis;
-                        info.time[sub] = currentRounds * timeToInt(int);
-                    }
-                });
-              } else {
-                total_subs.forEach(sub => {
-                    if (info.yards[sub]) {
-                        info.yards[sub] += currentRounds * dis;
-                        info.time[sub] += currentRounds * timeToInt(int);
-                    } else {
-                        info.yards[sub] = currentRounds * dis;
-                        info.time[sub] = currentRounds * timeToInt(int);
-                    }
-                });
-              }
-              let currentLine = {
-                  "rep": rep,
-                  "dis": dis,
-                  "int": int,
-                  "des": des,
-                  "notes": []
-              };
-              currentSet.lines.push(currentLine);
-          } else if (roundLine.test(line)) {
-              let array = roundLine.exec(line);
-              currentRounds = parseInt(array[1], 10);
-          } else if (restLine.test(line)) {
-              let array = restLine.exec(line);
-              let rep = 1;
-              let dis = 0;
-              let int = array[1];
-              let des = array[2];
-              if (currentSubs.length) {
-                currentSubs.forEach(sub => {
-                    if (info.yards[sub]) {
-                        info.time[sub] += currentRounds * timeToInt(int);
-                    } else {
-                        info.time[sub] = currentRounds * timeToInt(int);
-                    }
-                });
-              } else {
-                total_subs.forEach(sub => {
-                    if (info.yards[sub]) {
-                        info.time[sub] += currentRounds * timeToInt(int);
-                    } else {
-                        info.time[sub] = currentRounds * timeToInt(int);
-                    }
-                });
-              }
-              let currentLine = {
-                  "rep": rep,
-                  "dis": dis,
-                  "int": int,
-                  "des": des,
-                  "notes": []
-              };
-              currentSet.lines.push(currentLine);
-          } else if (setDes.test(line)) {
-              let array = setDes.exec(line);
-              currentSubs = [];
-              if (line.match(subGroup)) {
-                sub_array = line.match(subGroup);
-                sub_array.forEach(sub => {
-                    currentSubs.push(sub);
-                });
-              }
-              currentSet.subs = currentSubs;
-              currentSet.des = array[1];
-
-              if (currentSubs.length) {
-                currentSubs.forEach(sub => {
-                    if (info.yards[sub]) {
-                        info.rest[sub] += timeToInt(globalRestBetween);
-                    } else {
-                        info.rest[sub] = timeToInt(globalRestBetween);
-                    }
-                });
-              } else {
-                total_subs.forEach(sub => {
-                    if (info.yards[sub]) {
-                        info.rest[sub] += timeToInt(globalRestBetween);
-                    } else {
-                        info.rest[sub] = timeToInt(globalRestBetween);
-                    }
-                });
-              }
-
-          } else if (noteLine.test(line)) {
-              let array = noteLine.exec(line);
-              currentSet.lines.at(-1).notes.push(array[1]);
-          } else if (endRoundLine.test(line)) {
-              if (currentSet.lines.length != 0) {
-                  currentSet.rounds = currentRounds;
-                  info.sets.push(currentSet);
-                  currentRounds = 1;
-                  currentSet = {
-                      des: "",
-                      lines: [],
-                      rounds: 1,
-                      subs: currentSubs
-                  };
-              }
-          } else if (line === "") {
-              if (currentSet.lines.length != 0) {
-                  currentSet.rounds = currentRounds;
-                  info.sets.push(currentSet);
-                  currentRounds = 1;
-                  currentSet = {
-                      des: "",
-                      lines: [],
-                      rounds: 1,
-                      subs: currentSubs
-                  };
-              }
-          }
-          if (line.length > 55) {
-              tooLong = true;
-          }
-      });
-      if (currentSet.lines.length != 0) {
-          currentSet.rounds = currentRounds;
-          info.sets.push(currentSet);
-      }
-      info.pace_seconds = pace_seconds
-      info.total_subs = total_subs;
-      globalInfo = info;
-      if (tooLong) {
-          document.getElementById("workout").style.color = "red";
-      } else {
-          document.getElementById("workout").style.color = "black";
-      }
-      return info;
-  }
-  const getDifference = (a, b) => {
-    var i = 0;
-    var j = 0;
-    var result = "";
-
-    while (j < b.length) {
-      if (a[i] != b[j] || i == a.length)
-        result += b[j];
-      else
-        i++;
-      j++;
-    }
-    return result;
-  }
-
+  let workout_json = {};
+  let subgroups_data = {};
+  let workout_metadata = {};
   const process = (e) => {
-      let textArea = document.getElementById('workout').value;
-      let originalTextArea = `{{ workout_text }}`.replace(/\s+/g, '')
-      let newTextArea = textArea.replace(/\s+/g, '')
-      if (originalTextArea != newTextArea) {
-	  document.getElementById('edited').innerHTML = 'edited!'
-      } else {
-	  document.getElementById('edited').innerHTML = ''
-      }
+      // Set Workouts Global
+      let text_area = document.getElementById('workout').value;
+      let rest_seconds = time_string_to_seconds(document.getElementById("rest_interval").value);
+      workout_json = workout_text_to_json(text_area, rest_seconds);
 
-      let array = textArea.split('\n');
-      let info = getInfo(array);
+      // Set Subgroups Global
+      subgroups_data = get_all_subgroups_data(workout_json);
 
-      table = document.getElementById('summaryTable')
-      subs = info.total_subs
+      // Set Workout Metadata Global
+      workout_metadata = {
+	  "team": "{{ team['name'] }}",
+	  "group": "{{ group['name'] }}",
+	  "title":  document.getElementById('title').value,
+	  "date": document.getElementById('date').value.replace("/", "-"),
+	  "time_of_day": document.getElementById('pm').checked ? "PM" : "AM"
+      };
 
-      updated_subs = []
-      for (let i = 1; i < table.rows.length; ++i) {
-        let row = table.rows[i];
-        if (subs.includes(row.cells[0].innerHTML)) {
-            row.cells[1].innerHTML = info.yards[row.cells[0].innerHTML] || 0
-            row.cells[2].innerHTML = timeToString(info.time[row.cells[0].innerHTML])
-            row.cells[3].innerHTML = timeToString(info.time[row.cells[0].innerHTML] + info.rest[row.cells[0].innerHTML])
-            updated_subs.push(row.cells[0].innerHTML)
-        } else {
-            table.deleteRow(i);
-            i--;
-        }
-      }
-
-      subs.forEach(sub => {
-        if (!updated_subs.includes(sub)) {
-            row = table.insertRow()
-            subGroupName = row.insertCell();
-            yards = row.insertCell();
-            time_total = row.insertCell();
-            time_with_rest = row.insertCell();
-
-            subGroupName.innerHTML = sub;
-            yards.innerHTML = info.yards[sub] || 0;
-            time_with_rest.innerHTML = timeToString(info.time[sub] + info.rest[sub]);
-            time_total.innerHTML = timeToString(info.time[sub]);
-        }
-      });
-
-      max_yards = 0;
-      for (let key in info.yards) {
-        if (info.yards[key] > max_yards) {
-            max_yards = info.yards[key]
-        }
-      }
-      document.getElementById('total_yards').value = max_yards
-      document.getElementById('last_pace').value = timeToShortString(info.pace_seconds)
-  }
-
-  process()
-
-  // use our custom object to create a pdf file and download it
-  const makePdf = () => {
-      const {
-          jsPDF
-      } = window.jspdf;
-      const newLineDist = 17;
-      const smallerSpace = 12;
-      const tab = 25;
-      const margin = 20;
-
-      let pdf = new jsPDF({
-        unit: 'px'
-      });
-      logo_width = {{ team['logo_width'] }};
-      sub_group_count = 0;
-      globalInfo.total_subs.forEach(sub => {
-        pdf.addImage("{{ team['image'] }}", 'jpeg', (426.5 - logo_width), 20, logo_width, 80);
-        pdf.setFont("Courier", "normal");
-        pdf.setFontSize(32);
-
-        pdf.text("{{ group['name'] }} " + sub, margin, 36);
-        pdf.setFontSize(20);
-        pdf.text(globalInfo.date, margin, 56);
-        pdf.setFontSize(18);
-        pdf.setFont("Courier", "italic");
-        pdf.text(globalInfo.title, margin, 76);
-
-        pdf.setFontSize(16);
-        pdf.setFont("Courier", "normal");
-
-        let left = margin;
-        let top = 94;
-        globalInfo.sets.forEach(set => {
-            if (set.subs.length == 0 || set.subs.includes(sub)) {
-                pdf.setFont("Courier", "bold");
-                if (set.des) {
-                    pdf.text(set.des, left, top);
-                    top += newLineDist;
-                }
-                pdf.setFont("Courier", "normal");
-                if (set.rounds != 1) {
-                    pdf.text(set.rounds + " x {", left, top);
-                    left = margin + tab;
-                    top += newLineDist;
-                }
-                set.lines.forEach(line => {
-                    pdf.text((line.rep > 1 ? line.rep + " x " : "") + (line.dis > 0 ? line.dis + " @ " : "") + line.int + " " + line.des, left, top);
-                    if (line.notes.length > 0) {
-                        pdf.setFontSize(12);
-                        pdf.setFont("Courier", "italic");
-                        line.notes.forEach(note => {
-                            top += smallerSpace;
-                            pdf.text('\u2022 ' + note, left + tab, top);
-                        });
-                        pdf.setFontSize(16);
-                        pdf.setFont("Courier", "normal");
-                    }
-                    top += newLineDist;
-                });
-                if (left === margin + tab) {
-                    left = margin;
-                }
-                top += smallerSpace;
-            }
-        });
-        sub_group_count++;
-        pdf.addPage();
-      });
-      var pageCount = pdf.internal.getNumberOfPages();
-      pdf.deletePage(pageCount)
-      pdf.save(globalInfo.date + "_" + globalInfo.group + ".pdf");
+      // Update Table
+      const container = document.getElementById('summaryTable');
+      const table = subgroups_data_to_table(subgroups_data);
+      container.innerHTML = '';
+      container.appendChild(table);
   };
-  // use our custom object to create a seconds file to use in the app
-  const make_seconds = () => {
-      const globalRestBetween = document.getElementById("rest_interval").value;
-      let seconds = {};
-      seconds._type = "pack";
-      seconds.name = "Shared Timers";
-      seconds.items = [];
-      let folder = {};
-      folder._type = "pack";
-      folder.name = "{{ team['name'] }} {{ group['name'] }} " + globalInfo.date;
-      folder.color = 3;
-      folder.items = [];
-      globalInfo.sets.forEach(setItem => {
-          let set = {};
-          set.overrun = false;
-          set._type = "cust";
-          set.type = 0;
-          set.name = setItem.des;
-          set.soundScheme = 1;
-          set.activity = 46;
-          set.intervals = [];
-          for (let i = 0; i < setItem.rounds; i++) {
-	      setItem.lines.forEach(line => {
-                  for (let j = 0; j < line.rep; j++) {
-		      let secondsLine = {};
-		      secondsLine.splitRest = 0;
-		      secondsLine.ducked = false;
-		      secondsLine.rest = false;
-		      secondsLine.color = (globalColor % 9) + 1;
-		      secondsLine.indefinite = false;
-		      secondsLine.split = false;
-		      secondsLine.vibration = false;
-		      secondsLine.halfwayAlert = false;
-		      secondsLine.duration = timeToInt(line.int);
-		      secondsLine._type = "int";
-		      secondsLine.name = (line.dis > 0 ? line.dis + " " : "") + line.des;
 
-		      set.intervals.push(secondsLine);
-                  }
-                  globalColor++;
-	      });
-          }
-          folder.items.push(set);
-      });
+  process();
 
-      globalInfo.total_subs.forEach(sub => {
-        let wholeWorkout = {};
-        wholeWorkout.overrun = false;
-        wholeWorkout._type = "cust";
-        wholeWorkout.type = 0;
-        wholeWorkout.name = "Everything " + sub;
-        wholeWorkout.soundScheme = 1;
-        wholeWorkout.activity = 46;
-        wholeWorkout.intervals = [];
-        globalInfo.sets.forEach(setItem => {
-            if (setItem.subs.length == 0 || setItem.subs.includes(sub)) {
-                let restLine = {};
-                restLine.splitRest = 0;
-                restLine.ducked = false;
-                restLine.rest = false;
-                restLine.color = (globalColor % 9) + 1;
-                restLine.indefinite = false;
-                restLine.split = false;
-                restLine.vibration = false;
-                restLine.halfwayAlert = false;
-                restLine.duration = timeToInt(globalRestBetween);
-                restLine._type = "int";
-                restLine.name = "Rest, Setting up Next Set";
-                if(setItem.des) {
-                    wholeWorkout.intervals.push(restLine);
-                    globalColor++;
-                }
-                for (let i = 0; i < setItem.rounds; i++) {
-                    setItem.lines.forEach(line => {
-                        for (let j = 0; j < line.rep; j++) {
-                            let secondsLine = {};
-                            secondsLine.splitRest = 0;
-                            secondsLine.ducked = false;
-                            secondsLine.rest = false;
-                            secondsLine.color = (globalColor % 9) + 1;
-                            secondsLine.indefinite = false;
-                            secondsLine.split = false;
-                            secondsLine.vibration = false;
-                            secondsLine.halfwayAlert = false;
-                            secondsLine.duration = timeToInt(line.int);
-                            secondsLine._type = "int";
-                            name_distance = (line.dis > 0 ? line.dis + " " : "")
-                            name_set_num = (line.rep == 1 ? "" : " (" + (j + 1) + "/" + line.rep + ")")
-                            name_round_num = (setItem.rounds == 1 ? "" : " [" + (i + 1) + "/" + setItem.rounds + "]")
-                            secondsLine.name = name_distance + line.des + name_set_num + name_round_num;
-                            wholeWorkout.intervals.push(secondsLine);
-                        }
-                        globalColor++;
-                    });
-                }
-                globalColor++;
-            }
-        });
-        folder.items.push(wholeWorkout);
-      });
+  const download_pdf = () => {
+      workout_json_to_pdf(workout_json, workout_metadata, subgroups_data, "{{ team['image'] }}", {{ team['logo_width'] }});
+  };
 
-      seconds.items.push(folder);
+  const download_seconds = () => {
+      let seconds = workout_json_to_seconds(workout_json, workout_metadata, subgroups_data);
+      let seconds_string = JSON.stringify(seconds);
 
-      document.getElementById('seconds_json').value = JSON.stringify(seconds)
-  }
-
-  let pdfButton = document.getElementById("clickbind");
-  pdfButton.addEventListener("click", makePdf);
+      fetch("{{ url_for('download_seconds') }}", {
+	  method: "POST",
+	  headers: {
+	      "Content-Type": "application/json"
+	  },
+	  body: JSON.stringify(seconds)
+      })
+	  .then(response => response.blob())
+	  .then(blob => {
+	      var url = window.URL.createObjectURL(blob);
+	      var a = document.createElement('a');
+	      a.style.display = 'none';
+	      a.href = url;
+	      a.download = 'temp.seconds';
+	      document.body.appendChild(a);
+	      a.click();
+	      document.body.removeChild(a);
+	      window.URL.revokeObjectURL(url);
+	  }).catch((error) => {
+	      console.log('Error:', error);
+	  });
+  };
 </script>
 {% endif %}
 {% endblock %}

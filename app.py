@@ -87,7 +87,7 @@ def index():
         query = f"SELECT * FROM groups g WHERE g.team_id = '{team_id}'",
         enable_cross_partition_query = True
       )
-      
+
       team_ids_to_groups[team['id']] = list(groups)
       team_ids_to_names[team['id']] = team['name']
 
@@ -402,14 +402,13 @@ def write_workout_id(id):
 
 @app.route('/seconds/download', methods = ['POST'])
 def download_seconds():
-  seconds_json = request.form.get('seconds_json')
-  id = request.form.get('id')
+  seconds_json = request.json
   file_path = os.path.join(current_app.root_path, 'temp.seconds')
   with open(file_path, 'w') as f:
-    f.write(seconds_json)
+    f.write(str(seconds_json))
 
-  group = request.form.get('group')
-  date = request.form.get('date')
+  group = "varsity"
+  date = "date"
   file_name = f"{date}-{group.lower().replace(' ', '-')}.seconds"
   return send_file(file_path, download_name = file_name)
 

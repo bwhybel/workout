@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% block title %}writing workouts{% endblock %}
 {% block content %}
-<h1>{% block title %}writing workouts{% endblock %}</h1>
+
 <form action={{ url_for('code') }} method="post">
   <label for='code'>code</label>
   <input type='password' id='code' name='code'>

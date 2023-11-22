@@ -86,7 +86,7 @@ li {
   {% endif %}
   {% for workout in workouts %}
   <li onclick="redirectToWorkout('{{ url_for('write_workout_id', id=workout['id']) }}')">
-    <div class="date">{{ workout['date'] }}</div>
+    <div class="date">{{ workout['date'] }} {{ workout['time_of_day'] }}</div>
     <div class="title">{{ workout['title'].lower() }}</div>
     <div class="distance">{{ workout['distance'] }}</div>
   </li>

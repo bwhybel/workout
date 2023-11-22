@@ -272,7 +272,7 @@ def workouts(group_id, page = 1):
 
   workouts_data = list(
     get_container('workouts').query_items(
-      query = f"SELECT w.id, w.date, w.title, w.distance FROM workouts w WHERE w.group_id = '{group_id}' ORDER BY w.date DESC OFFSET {(page - 1) * 10} LIMIT 10",
+      query = f"SELECT w.id, w.date, w.title, w.distance, w.time_of_day FROM workouts w WHERE w.group_id = '{group_id}' ORDER BY w.date DESC OFFSET {(page - 1) * 10} LIMIT 10",
       enable_cross_partition_query = True
     )
   )
@@ -301,6 +301,7 @@ def workout(group_id):
       'rest_interval': request.form.get('rest_interval'),
       'date': request.form.get('date'),
       'distance': request.form.get('total_yards'),
+      'time_of_day': request.form.get('timeOfDay'),
       'workout_text': request.form.get('workout_text')
     }
   )
@@ -397,6 +398,7 @@ def write_workout_id(id):
     title = real_workout['title'],
     rest_interval = real_workout['rest_interval'],
     workout_text = real_workout['workout_text'],
+    time_of_day = real_workout['time_of_day'] if 'time_of_day' in real_workout else 'pm',
     should_save = permission == 'rwe' or permission == 'rw'
   )
 

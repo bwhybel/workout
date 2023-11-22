@@ -70,8 +70,8 @@ textarea {
   <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'>
   <label for='date'>date</label>
   <input type='text' pattern="\d\d\d\d-\d\d-\d\d" id='date' name='date' value='{{ date or today }}'  maxlength="10" size="10">
-  <input type="radio" id="am" name="timeOfDay"><label for="am">AM</label>
-  <input type="radio" id="pm" name="timeOfDay" checked><label for="pm">PM</label>
+  <input type="radio" id="am" value="am" name="timeOfDay" {% if time_of_day == 'am' %}checked{% endif %}><label for="am">AM</label>
+  <input type="radio" id="pm" value="pm" name="timeOfDay" {% if not time_of_day or time_of_day == 'pm' %}checked{% endif %}><label for="pm">PM</label>
   <label for='title'>title</label>
   <input type='text' id='title' name='title' value='{{ title }}' style="width: 160px;">
   <label for='rest_interval'>rest</label>

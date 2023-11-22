@@ -60,8 +60,10 @@ textarea {
 {% if not group %}
 <p> uhh this isn't an actual group you can write workouts for </p>
 {% else %}
-<div onclick="go_to_url('{{ url_for('index') }}')" class="go_home">home</div>
-<div onclick="go_to_url('{{ url_for('workouts', group_id=group['id']) }}')" class="go_to_workouts">all {{ team['name'].lower() }} {{ group['name'].lower() }} workouts</div>
+
+<a href="{{ url_for('index') }}">home</a>
+<a href="{{ url_for('workouts', group_id=group['id']) }}">all {{ team['name'].lower() }} {{ group['name'].lower() }} workouts</a>
+
 <table id="summaryTable"></table><br />
 <form action={{ url_for('workout', group_id=group['id']) }} method="post" style="display: inline;">
   <label for='id' style='display: none;'>id</label>
@@ -86,8 +88,17 @@ textarea {
 </form>
 {% endif %}
 
-<button onclick="download_seconds()">seconds</button>
-<button onclick="download_pdf()">pdf</button>
+<form onsubmit='download_seconds()' action={{ url_for('download_seconds') }} method="post" style="display: inline;">
+  <input style='display: none;' type='text' name='seconds_json' id='seconds_json'>
+  <input style='display: none;' type='text' name='date' id='seconds_date'>
+  <input style='display: none;' type='text' name='group' id='seconds_group'>
+  <input style='display: none;' type='text' name='team' id='seconds_team'>
+  <input style="width: 100px;height: 50px" type="submit" value="seconds">
+</form>
+
+<form onsubmit='download_pdf()' style="display: inline;">
+  <input style="width: 100px;height: 50px" type="submit" value="pdf">
+</form>
 
 <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
 <script src={{ url_for('static', filename='seconds_to_string.js') }}></script>
@@ -102,7 +113,9 @@ textarea {
 <script src={{ url_for('static', filename='workout_json_to_pdf.js') }}></script>
 <script src={{ url_for('static', filename='workout_json_to_seconds.js') }}></script>
 <script src={{ url_for('static', filename='subgroups_data_to_table.js') }}></script>
+<script src={{ url_for('static', filename='subgroups_data_to_max_yards.js') }}></script>
 <script src={{ url_for('static', filename='line_json_to_text.js') }}></script>
+<script src={{ url_for('static', filename='workout_json_to_last_pace.js') }}></script>
 <script>
   let workout_json = {};
   let subgroups_data = {};
@@ -115,6 +128,9 @@ textarea {
 
       // Set Subgroups Global
       subgroups_data = get_all_subgroups_data(workout_json);
+
+      // Get Last Pace
+      document.getElementById('last_pace').value = seconds_to_string(workout_json_to_last_pace(workout_json), short_format = true)
 
       // Set Workout Metadata Global
       workout_metadata = {
@@ -130,6 +146,9 @@ textarea {
       const table = subgroups_data_to_table(subgroups_data);
       container.innerHTML = '';
       container.appendChild(table);
+
+      // Update Max Yards in Background
+      document.getElementById('total_yards').value = subgroups_data_to_max_yards(subgroups_data);
   };
 
   process();
@@ -140,29 +159,10 @@ textarea {
 
   const download_seconds = () => {
       let seconds = workout_json_to_seconds(workout_json, workout_metadata, subgroups_data);
-      let seconds_string = JSON.stringify(seconds);
-
-      fetch("{{ url_for('download_seconds') }}", {
-	  method: "POST",
-	  headers: {
-	      "Content-Type": "application/json"
-	  },
-	  body: JSON.stringify(seconds)
-      })
-	  .then(response => response.blob())
-	  .then(blob => {
-	      var url = window.URL.createObjectURL(blob);
-	      var a = document.createElement('a');
-	      a.style.display = 'none';
-	      a.href = url;
-	      a.download = 'temp.seconds';
-	      document.body.appendChild(a);
-	      a.click();
-	      document.body.removeChild(a);
-	      window.URL.revokeObjectURL(url);
-	  }).catch((error) => {
-	      console.log('Error:', error);
-	  });
+      document.getElementById('seconds_json').value = JSON.stringify(seconds);
+      document.getElementById('seconds_date').value = workout_metadata["date"];
+      document.getElementById('seconds_group').value = workout_metadata["group"];
+      document.getElementById('seconds_team').value = workout_metadata["team"];
   };
 </script>
 {% endif %}

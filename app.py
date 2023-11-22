@@ -402,28 +402,16 @@ def write_workout_id(id):
 
 @app.route('/seconds/download', methods = ['POST'])
 def download_seconds():
-  seconds_json = request.json
+  seconds_json = request.form.get('seconds_json')
+  id = request.form.get('id')
   file_path = os.path.join(current_app.root_path, 'temp.seconds')
   with open(file_path, 'w') as f:
-    f.write(str(seconds_json))
+    f.write(seconds_json)
 
-  group = "varsity"
-  date = "date"
-  file_name = f"{date}-{group.lower().replace(' ', '-')}.seconds"
-  return send_file(file_path, download_name = file_name)
-
-
-@app.route('/wk3/download', methods = ['POST'])
-def download_wk3():
-  wk3_text = request.form.get('wk3_text')
-  id = request.form.get('id')
-  file_path = os.path.join(current_app.root_path, 'temp.wk3')
-  with open(file_path, 'w') as f:
-    f.write(wk3_text)
-
+  team = request.form.get('team')
   group = request.form.get('group')
   date = request.form.get('date')
-  file_name = f"{date}-{group.lower().replace(' ', '-')}.wk3"
+  file_name = f"{date}-{team.lower().replace(' ', '-')}-{group.lower().replace(' ', '-')}.seconds"
   return send_file(file_path, download_name = file_name)
 
 

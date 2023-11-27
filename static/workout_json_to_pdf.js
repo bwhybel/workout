@@ -18,9 +18,9 @@ const workout_json_to_pdf = (workout_json, workout_metadata, subgroups_data, ima
 	pdf.text(workout_metadata["team"] + " " + workout_metadata["group"] + " (" + subgroup + ")", 20, 25);
 	pdf.setFontSize(16);
 	pdf.setFont("Courier", "italic");
-	pdf.text(workout_metadata["date"] + " " + workout_metadata["time_of_day"], 20, 36);
+	pdf.text(workout_metadata["date"] + " " + workout_metadata["time_of_day"], 20, 38);
 	pdf.setFont("Courier", "bold");
-	pdf.text(workout_metadata["title"], 20, 48);
+	pdf.text(workout_metadata["title"], 20, 50);
 	pdf.setFontSize(12);
 
 	let pointer = 66;

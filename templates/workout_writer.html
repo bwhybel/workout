@@ -122,48 +122,48 @@ form input[type="submit"] {
   let subgroups_data = {};
   let workout_metadata = {};
   const process = (e) => {
-      // Set Workouts Global
-      let text_area = document.getElementById('workout').value;
-      let rest_seconds = time_string_to_seconds(document.getElementById("rest_interval").value);
-      workout_json = workout_text_to_json(text_area, rest_seconds);
+    // Set Workouts Global
+    let text_area = document.getElementById('workout').value;
+    let rest_seconds = time_string_to_seconds(document.getElementById("rest_interval").value);
+    workout_json = workout_text_to_json(text_area, rest_seconds);
 
-      // Set Subgroups Global
-      subgroups_data = get_all_subgroups_data(workout_json);
+    // Set Subgroups Global
+    subgroups_data = get_all_subgroups_data(workout_json);
 
-      // Get Last Pace
-      document.getElementById('last_pace').value = seconds_to_string(workout_json_to_last_pace(workout_json), short_format = true)
+    // Get Last Pace
+    document.getElementById('last_pace').value = seconds_to_string(workout_json_to_last_pace(workout_json), short_format = true)
 
-      // Set Workout Metadata Global
-      workout_metadata = {
-	  "team": "{{ team['name'] }}",
-	  "group": "{{ group['name'] }}",
-	  "title":  document.getElementById('title').value,
-	  "date": document.getElementById('date').value.replace("/", "-"),
-	  "time_of_day": document.getElementById('pm').checked ? "PM" : "AM"
-      };
+    // Set Workout Metadata Global
+    workout_metadata = {
+      "team": "{{ team['name'] }}",
+      "group": "{{ group['name'] }}",
+      "title":  document.getElementById('title').value,
+      "date": document.getElementById('date').value.replace("/", "-"),
+      "time_of_day": document.getElementById('pm').checked ? "PM" : "AM"
+    };
 
-      // Update Table
-      const container = document.getElementById('summaryTable');
-      const table = subgroups_data_to_table(subgroups_data);
-      container.innerHTML = '';
-      container.appendChild(table);
+    // Update Table
+    const container = document.getElementById('summaryTable');
+    const table = subgroups_data_to_table(subgroups_data);
+    container.innerHTML = '';
+    container.appendChild(table);
 
-      // Update Max Yards in Background
-      document.getElementById('total_yards').value = subgroups_data_to_max_yards(subgroups_data);
+    // Update Max Yards in Background
+    document.getElementById('total_yards').value = subgroups_data_to_max_yards(subgroups_data);
   };
 
   process();
 
   const download_pdf = () => {
-      workout_json_to_pdf(workout_json, workout_metadata, subgroups_data, "{{ team['image'] }}", {{ team['logo_width'] }});
+    workout_json_to_pdf(workout_json, workout_metadata, subgroups_data, "{{ team['image'] }}", {{ team['logo_width'] }});
   };
 
   const download_seconds = () => {
-      let seconds = workout_json_to_seconds(workout_json, workout_metadata, subgroups_data);
-      document.getElementById('seconds_json').value = JSON.stringify(seconds);
-      document.getElementById('seconds_date').value = workout_metadata["date"];
-      document.getElementById('seconds_group').value = workout_metadata["group"];
-      document.getElementById('seconds_team').value = workout_metadata["team"];
+    let seconds = workout_json_to_seconds(workout_json, workout_metadata, subgroups_data);
+    document.getElementById('seconds_json').value = JSON.stringify(seconds);
+    document.getElementById('seconds_date').value = workout_metadata["date"];
+    document.getElementById('seconds_group').value = workout_metadata["group"];
+    document.getElementById('seconds_team').value = workout_metadata["team"];
   };
 </script>
 {% endif %}

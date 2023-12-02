@@ -8,7 +8,6 @@
   <input type='submit' value='submit'>
 </form>
 
-
 {% for team_id in team_ids_to_groups.keys() %}
 <p>{{ team_ids_to_names[team_id].lower() }}{% if should_edit_teams %} [<a href={{ url_for('write_team_id', id=team_id) }}>edit</a>]{% endif %}</p>
 <ul>

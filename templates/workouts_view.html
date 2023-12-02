@@ -68,9 +68,6 @@
 .sub-link:hover {
   background-color: #2980b9; /* Change color on hover */
 }
-
-
-
 {% endblock %}
 
 {% block links %}
@@ -81,7 +78,6 @@
 {% endblock %}
 
 {% block content %}
-
 <div class="links-container">
   {% for workout in workouts %}
   <a href="{{ url_for('write_workout_id', id=workout['id']) }}" class="nice-link">

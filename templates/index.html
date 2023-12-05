@@ -9,6 +9,14 @@
     padding-left: 10px;
 }
 
+.team-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    margin: auto;
+    padding-left: 10px;
+}
+
 .left-content,
 .right-content {
     display: flex;
@@ -42,6 +50,14 @@
 .group-info:hover {
     background-color: #c18b8b;
 }
+
+.team-info {
+    transition: 0.3s all ease-in-out;
+}
+
+.team-info:hover {
+    background-color: #ADD8E6;
+}
 {% endblock %}
 {% block content %}
 
@@ -52,7 +68,7 @@
 </form>
 
 {% for team_id in team_ids_to_groups.keys() %}
-<div class="group-info">
+<div class="team-info">
     <div class="left-content">
         <p>{{ team_ids_to_names[team_id].lower() }}</p>
         {% if should_edit_teams %}<a class="btn" href={{ url_for('write_team_id', id=team_id) }}>Edit Team</a>{% endif %}

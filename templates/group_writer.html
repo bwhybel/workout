@@ -1,4 +1,7 @@
 {% extends 'base.html' %}
+{% block links %}
+<li><a href="{{ url_for('index') }}">home</a></li>
+{% endblock %}
 {% block content %}
 <h1>{% block title %}writing a group{% endblock %}</h1>
 {% if id %}

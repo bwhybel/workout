@@ -165,7 +165,7 @@ form input[type="submit"] {
 
     // Add Error Message
     const lines = text_area.split('\n');
-    const too_long_line = lines.find(line => line.length > 60);
+    const too_long_line = lines.find(line => line.length > 57);
 
     const error_message = document.getElementById("error_message");
     if (too_long_line) {

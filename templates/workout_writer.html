@@ -57,6 +57,16 @@ form {
 form input[type="submit"] {
   width: 20%;
 }
+
+.error {
+  box-shadow: 0 0 5px 2px red;
+}
+
+#error_message {
+  color: red;
+  text-align: center;
+  margin-bottom: 10px;
+}
 {% endblock %}
 
 {% block content %}
@@ -77,6 +87,7 @@ form input[type="submit"] {
   <input type='text' id='total_yards' name='total_yards' style="display: none;">
   <label for='last_pace'>pace</label>
   <input type='text' id='last_pace' name='last_pace' maxlength="7" size="7"><br /><br />
+  <label for="workout" id="error_message">A single line is too long for it to appear in PDF</label>
   <textarea id='workout' name='workout_text' onkeyup='process(event, this)'>{{ workout_text }}</textarea><br />
   {% if should_save %}
   <input type="submit" value="save">
@@ -123,7 +134,8 @@ form input[type="submit"] {
   let workout_metadata = {};
   const process = (e) => {
     // Set Workouts Global
-    let text_area = document.getElementById('workout').value;
+    const text_area_element = document.getElementById('workout');
+    let text_area = text_area_element.value;
     let rest_seconds = time_string_to_seconds(document.getElementById("rest_interval").value);
     workout_json = workout_text_to_json(text_area, rest_seconds);
 
@@ -150,6 +162,19 @@ form input[type="submit"] {
 
     // Update Max Yards in Background
     document.getElementById('total_yards').value = subgroups_data_to_max_yards(subgroups_data);
+
+    // Add Error Message
+    const lines = text_area.split('\n');
+    const too_long_line = lines.find(line => line.length > 60);
+
+    const error_message = document.getElementById("error_message");
+    if (too_long_line) {
+      text_area_element.classList.add('error');
+      error_message.style.display = 'block';
+    } else {
+      text_area_element.classList.remove('error');
+      error_message.style.display = 'none';
+    }
   };
 
   process();

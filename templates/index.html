@@ -81,8 +81,8 @@
         {% if should_edit_groups %}<a class="btn" href={{ url_for('write_group_id', id=group['id']) }}>Edit Group</a>{% endif %}
     </div>
     <div class="right-content">
-        <a class="btn" href={{ url_for('workouts', group_id=group['id']) }}>All Workouts</a>
-        <a class="btn" href={{ url_for('write_workout', group_id=group['id']) }}>New Workouts</a>
+        <a class="btn" href={{ url_for('workouts.workouts', group_id=group['id']) }}>All Workouts</a>
+        <a class="btn" href={{ url_for('workouts.write_workout', group_id=group['id']) }}>New Workouts</a>
     </div>
 </div>
 {% endfor %}

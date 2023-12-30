@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ team_name.lower() }} {{ group_name.lower() }} workouts{% endblock %}
+
+{% block style %}
+.links-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.nice-link {
+  display: flex;
+  text-decoration: none;
+  background-color: #f5f5f5;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  align-items: center; /* Align items vertically */
+  justify-content: space-between; /* Distribute space between items */
+  text-align: left;
+}
+
+.nice-link .date {
+  color: #333;
+}
+
+.nice-link .value {
+  color: #888;
+  margin-right: 10px;
+}
+
+.nice-link .title {
+  color: #555;
+  font-weight: bold;
+}
+
+/* Hover effect */
+.nice-link:hover {
+  background-color: #2980b9; /* Change color on hover */
+}
+
+
+/* Previous styles remain unchanged */
+
+.sub-links {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Vertically align items */
+}
+
+.number {
+  font-weight: bold;
+  margin: 0 10px; /* Adjust spacing */
+}
+
+.sub-link {
+  text-decoration: none;
+  background-color: #3498db; /* Button background color */
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin-top: 5px;
+}
+
+/* Hover effect */
+.sub-link:hover {
+  background-color: #2980b9; /* Change color on hover */
+}
+{% endblock %}
+
+{% block links %}
+<li><a href="{{ url_for('index') }}">home</a></li>
+{% if should_write %}
+<li><a href="{{ url_for('workouts.write_workout', group_id=group_id) }}">write new workout</a></li>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="links-container">
+  {% for workout in workouts %}
+  <a href="{{ url_for('workouts.write_workout_id', id=workout['id']) }}" class="nice-link">
+    <span class="date">{{ workout['date'] }} {{ workout['time_of_day'] }}</span>
+    <span class="title">{{ workout['title'] }}</span>
+    <span class="value">{{ workout['distance'] }}</span>
+  </a>
+  {% endfor %}
+</div>
+<div class="sub-links">
+  <a href="{{ url_for('workouts.workouts', group_id=group_id, page=page-1) }}" class="sub-link" {% if page == 1 %}style="visibility: hidden"{% endif %}>previous</a>
+  <span class="number">{{ page }}</span>
+  <a href="{{ url_for('workouts.workouts', group_id=group_id, page=page+1) }}" class="sub-link">next</a>
+</div>
+{% endblock %}

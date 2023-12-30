@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}
+writing a {{ group['name'].lower() }} workout
+{% endblock %}
+
+{% block links %}
+<li><a href="{{ url_for('index') }}">home</a></li>
+<li><a href="{{ url_for('workouts.workouts', group_id=group['id']) }}">all {{ team['name'].lower() }} {{ group['name'].lower() }} workouts</a></li>
+{% endblock %}
+
+{% block style %}
+textarea {
+  width: 100%;
+  height: 60vh;
+  padding: 5px;
+  margin-bottom: 10px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  resize: none;
+}
+
+input {
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  padding: 5px;
+  outline: none;
+}
+
+table {
+  width: 100%;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 4px;
+  text-align: center;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #e5e5e5;
+}
+
+tbody tr:first-child {
+  font-weight: bold;
+}
+
+form {
+  display: inline;
+}
+
+form input[type="submit"] {
+  width: 20%;
+}
+
+.error {
+  box-shadow: 0 0 5px 2px red;
+}
+
+#error_message {
+  color: red;
+  text-align: center;
+  margin-bottom: 10px;
+}
+{% endblock %}
+
+{% block content %}
+{% if not group %}
+<p> uhh this isn't an actual group you can write workouts for </p>
+{% else %}
+<table id="summaryTable"></table><br />
+<form action={{ url_for('workouts.workout', group_id=group['id']) }} method="post">
+  <input type='text' id='id' name='id' style='display: none;' value='{{ id }}'>
+  <label for='date'>date</label>
+  <input type='text' pattern="\d\d\d\d-\d\d-\d\d" id='date' name='date' value='{{ date or today }}'  maxlength="10" size="10">
+  <input type="radio" id="am" value="am" name="timeOfDay" {% if time_of_day == 'am' %}checked{% endif %}><label for="am">AM</label>
+  <input type="radio" id="pm" value="pm" name="timeOfDay" {% if not time_of_day or time_of_day == 'pm' %}checked{% endif %}><label for="pm">PM</label>
+  <label for='title'>title</label>
+  <input type='text' id='title' name='title' value='{{ title }}'>
+  <label for='rest_interval'>rest</label>
+  <input type='text' pattern="\d*" maxlength="4" size="4" id='rest_interval' name='rest_interval' value='{{ rest_interval or 2 }}'>
+  <input type='text' id='total_yards' name='total_yards' style="display: none;">
+  <label for='last_pace'>pace</label>
+  <input type='text' id='last_pace' name='last_pace' maxlength="7" size="7"><br /><br />
+  <label for="workout" id="error_message">A single line is too long for it to appear in PDF</label>
+  <textarea id='workout' name='workout_text' onkeyup='process(event, this)'>{{ workout_text }}</textarea><br />
+  {% if should_save %}
+  <input type="submit" value="save">
+  {% endif %}
+</form>
+
+{% if id and should_save %}
+<form action={{ url_for('workouts.delete_workout', workout_id=id) }}>
+  <input type='submit' value='delete'>
+</form>
+{% endif %}
+
+<form onsubmit='download_seconds()' action={{ url_for('workouts.download_seconds') }} method="post">
+  <input style='display: none;' type='text' name='seconds_json' id='seconds_json'>
+  <input style='display: none;' type='text' name='date' id='seconds_date'>
+  <input style='display: none;' type='text' name='group' id='seconds_group'>
+  <input style='display: none;' type='text' name='team' id='seconds_team'>
+  <input type="submit" value="seconds">
+</form>
+
+<form>
+  <input type="button" onclick="download_pdf()" value="pdf">
+</form>
+
+<script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+<script src={{ url_for('workouts.static', filename='seconds_to_string.js') }}></script>
+<script src={{ url_for('workouts.static', filename='time_string_to_seconds.js') }}></script>
+<script src={{ url_for('workouts.static', filename='set_line_to_json.js') }}></script>
+<script src={{ url_for('workouts.static', filename='round_line_to_rounds.js') }}></script>
+<script src={{ url_for('workouts.static', filename='workout_text_to_json.js') }}></script>
+<script src={{ url_for('workouts.static', filename='note_line_to_json.js') }}></script>
+<script src={{ url_for('workouts.static', filename='title_to_subgroups.js') }}></script>
+<script src={{ url_for('workouts.static', filename='title_without_subgroups.js') }}></script>
+<script src={{ url_for('workouts.static', filename='get_all_subgroups_data.js') }}></script>
+<script src={{ url_for('workouts.static', filename='workout_json_to_pdf.js') }}></script>
+<script src={{ url_for('workouts.static', filename='workout_json_to_seconds.js') }}></script>
+<script src={{ url_for('workouts.static', filename='subgroups_data_to_table.js') }}></script>
+<script src={{ url_for('workouts.static', filename='subgroups_data_to_max_yards.js') }}></script>
+<script src={{ url_for('workouts.static', filename='line_json_to_text.js') }}></script>
+<script src={{ url_for('workouts.static', filename='workout_json_to_last_pace.js') }}></script>
+<script>
+  let workout_json = {};
+  let subgroups_data = {};
+  let workout_metadata = {};
+  const process = (e) => {
+    // Set Workouts Global
+    const text_area_element = document.getElementById('workout');
+    let text_area = text_area_element.value;
+    let rest_seconds = time_string_to_seconds(document.getElementById("rest_interval").value);
+    workout_json = workout_text_to_json(text_area, rest_seconds);
+
+    // Set Subgroups Global
+    subgroups_data = get_all_subgroups_data(workout_json);
+
+    // Get Last Pace
+    document.getElementById('last_pace').value = seconds_to_string(workout_json_to_last_pace(workout_json), short_format = true)
+
+    // Set Workout Metadata Global
+    workout_metadata = {
+      "team": "{{ team['name'] }}",
+      "group": "{{ group['name'] }}",
+      "title":  document.getElementById('title').value,
+      "date": document.getElementById('date').value.replace("/", "-"),
+      "time_of_day": document.getElementById('pm').checked ? "PM" : "AM"
+    };
+
+    // Update Table
+    const container = document.getElementById('summaryTable');
+    const table = subgroups_data_to_table(subgroups_data);
+    container.innerHTML = '';
+    container.appendChild(table);
+
+    // Update Max Yards in Background
+    document.getElementById('total_yards').value = subgroups_data_to_max_yards(subgroups_data);
+
+    // Add Error Message
+    const lines = text_area.split('\n');
+    const too_long_line = lines.find(line => line.length > 57);
+
+    const error_message = document.getElementById("error_message");
+    if (too_long_line) {
+      text_area_element.classList.add('error');
+      error_message.style.display = 'block';
+    } else {
+      text_area_element.classList.remove('error');
+      error_message.style.display = 'none';
+    }
+  };
+
+  process();
+
+  const download_pdf = () => {
+    workout_json_to_pdf(workout_json, workout_metadata, subgroups_data, "{{ team['image'] }}", {{ team['logo_width'] }});
+  };
+
+  const download_seconds = () => {
+    let seconds = workout_json_to_seconds(workout_json, workout_metadata, subgroups_data);
+    document.getElementById('seconds_json').value = JSON.stringify(seconds);
+    document.getElementById('seconds_date').value = workout_metadata["date"];
+    document.getElementById('seconds_group').value = workout_metadata["group"];
+    document.getElementById('seconds_team').value = workout_metadata["team"];
+  };
+</script>
+{% endif %}
+{% endblock %}

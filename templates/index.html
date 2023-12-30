@@ -61,7 +61,7 @@
 {% endblock %}
 {% block content %}
 
-<form action={{ url_for('code') }} method="post">
+<form action={{ url_for('auth.code') }} method="post">
   <label for='code'>code</label>
   <input type='password' id='code' name='code'>
   <input type='submit' value='submit'>
@@ -71,14 +71,14 @@
 <div class="team-info">
     <div class="left-content">
         <p>{{ team_ids_to_names[team_id].lower() }}</p>
-        {% if should_edit_teams %}<a class="btn" href={{ url_for('write_team_id', id=team_id) }}>Edit Team</a>{% endif %}
+        {% if should_edit_teams %}<a class="btn" href={{ url_for('teams.write_team_id', id=team_id) }}>Edit Team</a>{% endif %}
     </div>
 </div>
 {% for group in team_ids_to_groups[team_id] %}
 <div class="group-info">
     <div class="left-content">
         <p>{{ group['name'].lower() }}</p>
-        {% if should_edit_groups %}<a class="btn" href={{ url_for('write_group_id', id=group['id']) }}>Edit Group</a>{% endif %}
+        {% if should_edit_groups %}<a class="btn" href={{ url_for('groups.write_group_id', id=group['id']) }}>Edit Group</a>{% endif %}
     </div>
     <div class="right-content">
         <a class="btn" href={{ url_for('workouts.workouts', group_id=group['id']) }}>All Workouts</a>
@@ -87,5 +87,5 @@
 </div>
 {% endfor %}
 {% endfor %}
-<p>{% if should_create_new_teams %}[<a href={{ url_for('write_team') }}>new team</a>]{% endif %}{% if should_create_new_groups %} [<a href={{ url_for('write_group') }}>new group</a>]{% endif %}</p>
+<p>{% if should_create_new_teams %}[<a href={{ url_for('teams.write_team') }}>new team</a>]{% endif %}{% if should_create_new_groups %} [<a href={{ url_for('groups.write_group') }}>new group</a>]{% endif %}</p>
 {% endblock %}
